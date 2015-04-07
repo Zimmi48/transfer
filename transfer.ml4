@@ -17,6 +17,7 @@ open Names
 open Term
 open Proofview
 open Clenv
+open Program
        
 module PairConstr =
   struct
@@ -39,7 +40,7 @@ let empty_transf :
 
 let surjections = ref empty_surj
 let transfers = ref empty_transf
-		    
+                    
 (* Do not forget to check type of proof *)
 let add_surjection f g proof =
   let env = Global.env () in
@@ -55,20 +56,20 @@ let add_surjection f g proof =
   let g_typ = Retyping.get_type_of env sigma g_fun in
   match kind_of_term f_typ, kind_of_term g_typ, kind_of_term thm with
   | Prod (_, t1, t2), Prod(_, t3, t4), Prod(_, t5, t6) when
-	 Constr.equal t1 t4 &&		      
-	   Constr.equal t2 t3 &&
-	     Constr.equal t2 t5 ->
+         Constr.equal t1 t4 &&                
+           Constr.equal t2 t3 &&
+             Constr.equal t2 t5 ->
      (* or should we rather test for conversion? *)
      (*let eq = mkApp (
-		  failwith "TODO" (* mkConst (Name (Id.of_string "eq")) *),
-		  [| t2 ;
-		     mkApp (f_fun ,  [| mkApp (g_fun , [| mkRel 1 |]) |] );
-		     mkRel 1 |] ) in*)
+                  failwith "TODO" (* mkConst (Name (Id.of_string "eq")) *),
+                  [| t2 ;
+                     mkApp (f_fun ,  [| mkApp (g_fun , [| mkRel 1 |]) |] );
+                     mkRel 1 |] ) in*)
      if true (*Constr.equal t6 eq*) then
        let key = (t1, t2) in
        surjections := PairConstrMap.add key
-					(f_fun, g_fun, proofterm)
-					!surjections
+                                        (f_fun, g_fun, proofterm)
+                                        !surjections
      else failwith "Bad proof"
   | _ -> failwith "Bad proof"
          (* Exceptions are not the right way to report that *)
@@ -81,25 +82,38 @@ let add_transfer f r r' proof =
   let key = failwith "TODO" in
   transfers := PairConstrMap.add key (f, r, r', proofterm) !transfers
 
-let unify_modulo env sigma hole_types cl_concl concl = failwith "TODO"
+exception Unif_failure
+let unify_modulo env sigma hole_types concl1 concl2 =
+  match kind_of_term concl1 , kind_of_term concl2 with
+  | Lambda (_, t1, c1) , Lambda (_, t2, c2) -> failwith "TODO"
+  | App (f1 , l1) , App (f2 , l2) ->
+     try
+       let sigma' , e , el = unify_modulo env sigma hole_types f1 f2 in
+       List.fold_left (sigma', [] , [])
+       let sigma'', e2, e2l = unify_modulo env sigma' hole_types l1
+  | Prod (_, t1, t2), Prod (_, t3, t4) -> failwith "TODO"
+  | _ -> failwith "TODO"
 
-let apply_modulo thm =
+let apply_modulo (sigma, thm) = (* Of what use is this sigma? *)
   Goal.nf_enter (* or enter ? *)
     (fun goal ->
      let env = Goal.env goal in
      let concl = Goal.concl goal in
      Refine.refine
        (fun sigma ->
-	let t = Retyping.get_type_of env sigma concl in
-	let sigma', cl = Clenv.make_evar_clause env sigma t in
-	let sigma'', e, el =
-	  unify_modulo env sigma
-		       (List.map (fun h -> h.hole_type) cl.cl_holes)
-		       cl.cl_concl concl in
-	sigma'' , mkApp (snd thm, [||])
+        let t = Retyping.get_type_of env sigma concl in
+        let sigma', cl = Clenv.make_evar_clause env sigma t in
+        let sigma'', e, el =
+          unify_modulo env sigma'
+                       (List.map (fun h -> h.hole_type) cl.cl_holes)
+                       cl.cl_concl concl in
+        let c = mkApp ( thm , Array.of_list
+                                (List.map2 (fun h e -> h.hole_evar)
+                                           cl.cl_holes el) ) in
+        sigma'' , c
        )
     )
-				  
+                                  
 VERNAC COMMAND EXTEND DeclareSurjection
 | [ "Declare" "Surjection" constr(f) "by" "(" constr(g) "," constr(proof) ")" ]
   -> [ add_surjection f g proof ]
@@ -107,7 +121,7 @@ END
 
 VERNAC COMMAND EXTEND DeclareTransfer
 | [ "Declare" "Transfer" ident(f) ident(r) ident(r')
-	      "by" constr(proof) ]
+              "by" constr(proof) ]
   -> [ add_transfer f r r' proof ]
 END       
 
