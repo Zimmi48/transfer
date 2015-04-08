@@ -32,10 +32,11 @@ module PairConstr =
 module PairConstrMap = Map.Make(PairConstr)
 (* This extra step is needed so that empty has not a polymorphic type
  * and can be used inside a Map *)
-let empty : (constr * constr * constr) PairConstrMap.t = PairConstrMap.empty
+let emptys : (constr * constr * constr) PairConstrMap.t = PairConstrMap.empty
+let emptyt : (constr * constr) PairConstrMap.t = PairConstrMap.empty
 
-let surjections = ref empty
-let transfers = ref empty
+let surjections = ref emptys
+let transfers = ref emptyt
                     
 (* Do not forget to check type of proof *)
 let add_surjection f g proof =
@@ -70,13 +71,20 @@ let add_surjection f g proof =
   | _ -> failwith "Bad proof"
          (* Exceptions are not the right way to report that *)
   
-(* Do not forget to check type of proof *)
 let add_transfer f r r' proof =
   let env = Global.env () in
   let sigma = Evd.empty in
   let proofterm, _ = Constrintern.interp_constr env sigma proof in (* unsafe *)
-  let key = failwith "TODO" in
-  transfers := PairConstrMap.add key (f, r, r', proofterm) !transfers
+  let thm = Retyping.get_type_of env sigma proofterm in
+  let f_fun, _ = Constrintern.interp_constr env sigma f in (* unsafe *)
+  let f_typ = Retyping.get_type_of env sigma f_fun in
+  let r_rel, _ = Constrintern.interp_constr env sigma r in (* unsafe *)
+  let r_typ = Retyping.get_type_of env sigma r_rel in
+  let r'_rel, _ = Constrintern.interp_constr env sigma r' in (* unsafe *)
+  let r'_typ = Retyping.get_type_of env sigma r'_rel in
+  (* Do not forget to check type of proof *)
+  let key = (r_rel, r'_rel) in
+  transfers := PairConstrMap.add key (f_fun, proofterm) !transfers
 
 exception Unif_failure
 (* exact_modulo takes a theorem corresponding to a goal modulo isomorphism
@@ -137,7 +145,7 @@ VERNAC COMMAND EXTEND DeclareSurjection
 END
 
 VERNAC COMMAND EXTEND DeclareTransfer
-| [ "Declare" "Transfer" ident(f) ident(r) ident(r')
+| [ "Declare" "Transfer" constr(f) constr(r) constr(r')
               "by" constr(proof) ]
   -> [ add_transfer f r r' proof ]
 END       
