@@ -29,11 +29,11 @@ module PairConstr =
     (* or should we rather test for conversion?*)
   end
     
-module PairConstrMap = Map.Make(PairConstr)
+module PMap = Map.Make(PairConstr)
 (* This extra step is needed so that empty has not a polymorphic type
  * and can be used inside a Map *)
-let emptys : (constr * constr * constr) PairConstrMap.t = PairConstrMap.empty
-let emptyt : (constr * constr) PairConstrMap.t = PairConstrMap.empty
+let emptys : (constr * constr * constr) PMap.t = PMap.empty
+let emptyt : (constr * constr) PMap.t = PMap.empty
 
 let surjections = ref emptys
 let transfers = ref emptyt
@@ -64,7 +64,7 @@ let add_surjection f g proof =
                      mkRel 1 |] ) in*)
      if true (*Constr.equal t6 eq*) then
        let key = (t1, t2) in
-       surjections := PairConstrMap.add key
+       surjections := PMap.add key
                                         (f_fun, g_fun, proofterm)
                                         !surjections
      else failwith "Bad proof"
@@ -84,9 +84,9 @@ let add_transfer f r r' proof =
   let r'_typ = Retyping.get_type_of env sigma r'_rel in
   (* Do not forget to check type of proof *)
   let key = (r_rel, r'_rel) in
-  transfers := PairConstrMap.add key (f_fun, proofterm) !transfers
+  transfers := PMap.add key (f_fun, proofterm) !transfers
 
-exception Unif_failure
+exception UnifFailure
 (* exact_modulo takes a theorem corresponding to a goal modulo isomorphism
    and construct a proof term for the goal *)
 let rec exact_modulo env sigma thm cl concl =
@@ -96,9 +96,6 @@ let rec exact_modulo env sigma thm cl concl =
      (* extend environment before recursive call *)
      failwith "TODO"
   | App (f1 , l1) , App (f2 , l2) ->
-     (* try exact match first *)
-     (* the relation f1 f2 must correspond : exactly or modulo conversion? *)
-     begin try
 	 (*
          let sigma , e = exact_modulo env sigma holes f1 f2 in
          let sigma , el = List.fold_left2 (fun (sigma, acc) t1 t2 ->
@@ -110,20 +107,27 @@ let rec exact_modulo env sigma thm cl concl =
          (* coq_eq_rect has not the right type *)
          sigma , mkApp (mkConst (coq_eq_rect ()), [|failwith "TODO"|])
           *)
-	 failwith "TODO"
-       with Unif_failure ->
-	 (* there may be a transfer required *)
-	 failwith "TODO"
-     end
+     (* try exact match first *)
+     if Constr.equal f1 f2 then
+       (* the relation f1 f2 must correspond : exactly or modulo conversion? *)
+       failwith "TODO: check unification -> proof term reflexivity"
+     else (* there may be a transfer required *)
+       begin try
+	   let (surj, proof) = PMap.find (f1, f2) !transfers in
+	   failwith "TODO: construct proof term"
+	 with Not_found -> raise UnifFailure
+       end
   | Prod (_, t1, t2), Prod (_, t3, t4) ->
      (* try exact match first *)
-     (* t1 and t3 must correspond: exactly or modulo conversion? *)
-     begin try
-	 failwith "TODO"
-       with Unif_failure ->
-	    (* there may be a transfer required *)
-	    failwith "TODO"
-     end
+     if Constr.equal t1 t3 then
+       (* t1 and t3 must correspond: exactly or modulo conversion? *)
+       failwith "TODO: recursive call"
+     else (* there may be a transfer required *)
+       begin try
+	   let (surj, inv, proof) = PMap.find (t1, t3) !surjections in
+	   failwith "TODO: recursive call"
+	 with Not_found -> raise UnifFailure
+       end
   | _ -> failwith "TODO"
 
 let exact_modulo_tactic (sigma, thm) = (* Of what use is this sigma? *)
