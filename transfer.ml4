@@ -36,20 +36,19 @@ let emptyt : (constr * constr) PMap.t = PMap.empty
 
 let surjections = ref emptys
 let transfers = ref emptyt
-                    
+
+let constr_and_type_of_ref r =
+  let t = Constrintern.intern_reference r in
+  let constr = Universes.constr_of_global t in
+  let typ = fst (Universes.type_of_global t) in (* unsafe *)
+  constr, typ
+			     
 (* Do not forget to check type of proof *)
 let add_surjection f g proof =
   let env = Global.env () in
-  let sigma = Evd.empty in
-  let proofterm = Constrintern.intern_reference proof in
-  (* unsafe *)
-  let thm, _ = Universes.type_of_global proofterm in
-  let f_fun, _ = Constrintern.interp_constr env sigma (CRef (f,None)) in
-  (* unsafe *)
-  let f_typ = Retyping.get_type_of env sigma f_fun in
-  let g_fun, _ = Constrintern.interp_constr env sigma (CRef (g,None)) in
-  (* unsafe *)
-  let g_typ = Retyping.get_type_of env sigma g_fun in
+  let proofterm , thm = constr_and_type_of_ref proof in
+  let f_fun , f_typ = constr_and_type_of_ref f in
+  let g_fun , g_typ = constr_and_type_of_ref g in
   let key =
     begin match kind_of_term f_typ, kind_of_term g_typ, kind_of_term thm with
 	  | Prod (_, t1, t2), Prod(_, t3, t4), Prod(_, t5, t6) ->
@@ -80,7 +79,7 @@ let add_surjection f g proof =
 	  | _ -> Errors.error "Bad proof."
   end in
   surjections := PMap.add key
-                          (f_fun, g_fun, Universes.constr_of_global proofterm)
+                          (f_fun, g_fun, proofterm)
                           !surjections
 			  
 let add_transfer f r r' proof =
