@@ -8,16 +8,15 @@
  * Coq < Declare ML Module "t".
  *)
 
-(*i camlp4use: "pa_extend.cmo" i*)
-(*i camlp4deps: "grammar/grammar.cma" i*)
-
-DECLARE PLUGIN "t"
+DECLARE PLUGIN "transfer"
 
 open Names
 open Term
 open Proofview
 open Clenv
-open Program
+open Coqlib
+open Constrexpr
+open Globnames
        
 module PairConstr =
   struct
@@ -26,7 +25,7 @@ module PairConstr =
       match Constr.compare x1 y1 with (* compare is defined on constr *)
       | 0 -> compare x2 y2
       | x -> x
-    (* or should we rather test for conversion?*)
+	       (* or should we rather test for conversion?*)
   end
     
 module PMap = Map.Make(PairConstr)
@@ -42,35 +41,48 @@ let transfers = ref emptyt
 let add_surjection f g proof =
   let env = Global.env () in
   let sigma = Evd.empty in
-  let proofterm, _ = Constrintern.interp_constr env sigma proof in (* unsafe *)
-  let thm = Retyping.get_type_of env sigma proofterm in
-  (*let f_fun = mkVar f in*)
-  let f_fun, _ = Constrintern.interp_constr env sigma f in (* unsafe *)
+  let proofterm = Constrintern.intern_reference proof in
+  (* unsafe *)
+  let thm, _ = Universes.type_of_global proofterm in
+  let f_fun, _ = Constrintern.interp_constr env sigma (CRef (f,None)) in
+  (* unsafe *)
   let f_typ = Retyping.get_type_of env sigma f_fun in
-  (* Anomaly : variable f unbound. *)
-  (*let g_fun = mkVar g in*)
-  let g_fun, _ = Constrintern.interp_constr env sigma g in (* unsafe *)
+  let g_fun, _ = Constrintern.interp_constr env sigma (CRef (g,None)) in
+  (* unsafe *)
   let g_typ = Retyping.get_type_of env sigma g_fun in
-  match kind_of_term f_typ, kind_of_term g_typ, kind_of_term thm with
-  | Prod (_, t1, t2), Prod(_, t3, t4), Prod(_, t5, t6) when
-         Constr.equal t1 t4 &&                
-           Constr.equal t2 t3 &&
-             Constr.equal t2 t5 ->
-     (* or should we rather test for conversion? *)
-     (*let eq = mkApp (
-                  failwith "TODO" (* mkConst (Name (Id.of_string "eq")) *),
-                  [| t2 ;
-                     mkApp (f_fun ,  [| mkApp (g_fun , [| mkRel 1 |]) |] );
-                     mkRel 1 |] ) in*)
-     if true (*Constr.equal t6 eq*) then
-       let key = (t1, t2) in
-       surjections := PMap.add key
-                                        (f_fun, g_fun, proofterm)
-                                        !surjections
-     else failwith "Bad proof"
-  | _ -> failwith "Bad proof"
-         (* Exceptions are not the right way to report that *)
-  
+  let key =
+    begin match kind_of_term f_typ, kind_of_term g_typ, kind_of_term thm with
+	  | Prod (_, t1, t2), Prod(_, t3, t4), Prod(_, t5, t6) ->
+	     begin try
+		 Reduction.conv env t1 t4; (* modulo conversion *)
+		 Reduction.conv env t2 t3;
+		 Reduction.conv env t2 t5;
+		 let eq_data = build_coq_eq_data () in
+		 let t6 , args = decompose_app t6 in
+		 if not (is_global eq_data.eq t6) then Errors.error "Bad proof";
+		 begin match args with
+		       | [ _ ; fgx ; x ] when isRelN 1 x ->
+			  begin match kind_of_term fgx with
+				| App (f , [| gx |]) ->
+				   Reduction.conv env f f_fun;
+				   begin match kind_of_term gx with
+					 | App (g , [| x |]) when isRelN 1 x ->
+					    Reduction.conv env g g_fun
+					 | _ -> Errors.error "Bad proof."
+				   end
+				| _ -> Errors.error "Bad proof."
+			  end
+		       | _ -> Errors.error "Bad proof."
+		 end;
+	       with Reduction.NotConvertible -> Errors.error "Bad proof."
+	     end;
+	     t1 , t2
+	  | _ -> Errors.error "Bad proof."
+  end in
+  surjections := PMap.add key
+                          (f_fun, g_fun, Universes.constr_of_global proofterm)
+                          !surjections
+			  
 let add_transfer f r r' proof =
   let env = Global.env () in
   let sigma = Evd.empty in
@@ -89,14 +101,11 @@ let add_transfer f r r' proof =
 exception UnifFailure
 (* exact_modulo takes a theorem corresponding to a goal modulo isomorphism
    and construct a proof term for the goal *)
-let rec exact_modulo env sigma thm cl concl =
+let rec exact_modulo env sigma thm concl : Evd.evar_map * Constr.t =
   match kind_of_term thm , kind_of_term concl with
-  | Lambda (_, t1, c1) , Lambda (_, t2, c2) ->
-     (* exact match *)
-     (* extend environment before recursive call *)
-     failwith "TODO"
   | App (f1 , l1) , App (f2 , l2) ->
-	 (*
+     
+     (* OLD CODE BEGINS
          let sigma , e = exact_modulo env sigma holes f1 f2 in
          let sigma , el = List.fold_left2 (fun (sigma, acc) t1 t2 ->
                           let sigma , e =
@@ -106,7 +115,8 @@ let rec exact_modulo env sigma thm cl concl =
          in
          (* coq_eq_rect has not the right type *)
          sigma , mkApp (mkConst (coq_eq_rect ()), [|failwith "TODO"|])
-          *)
+         OLD CODE ENDS *)
+     
      (* try exact match first *)
      if Constr.equal f1 f2 then
        (* the relation f1 f2 must correspond : exactly or modulo conversion? *)
@@ -117,40 +127,43 @@ let rec exact_modulo env sigma thm cl concl =
 	   failwith "TODO: construct proof term"
 	 with Not_found -> raise UnifFailure
        end
-  | Prod (_, t1, t2), Prod (_, t3, t4) ->
-     (* try exact match first *)
-     if Constr.equal t1 t3 then
-       (* t1 and t3 must correspond: exactly or modulo conversion? *)
-       failwith "TODO: recursive call"
+
+  | Prod (name, t1, t2), Prod (_, t3, t4) ->
+     let sigma, return = Reductionops.infer_conv env sigma t1 t3 in
+     if return then (* if t1 = t3 *)
+       let new_env = Environ.push_rel (name, None, t1) env in
+       let sigma, p_rec = exact_modulo new_env sigma t2 t4 in
+       failwith "TODO: construct proof term"
      else (* there may be a transfer required *)
        begin try
 	   let (surj, inv, proof) = PMap.find (t1, t3) !surjections in
 	   failwith "TODO: recursive call"
 	 with Not_found -> raise UnifFailure
        end
-  | _ -> failwith "TODO"
+  | _ ->
+     let sigma, return = Reductionops.infer_conv env sigma thm concl in
+     if return then
+       sigma, Universes.constr_of_global (build_coq_eq_data ()).refl
+     else
+       Errors.error "Cannot unify."
 
-let exact_modulo_tactic (sigma, thm) = (* Of what use is this sigma? *)
-  Goal.nf_enter (* or enter ? *)
-    (fun goal ->
-     let env = Goal.env goal in
-     let concl = Goal.concl goal in (* what is concl exactly? *)
-     Refine.refine
-       (fun sigma -> (* sigma has been masked *)
-        let t = Retyping.get_type_of env sigma concl in
-        let sigma, cl = Clenv.make_evar_clause env sigma t in
-        exact_modulo env sigma thm cl concl
-       )
-    )
-                                  
+let exact_modulo_tactic (_, thm) = (* Of what use is this evd _? *)
+  Goal.nf_enter (* enter wouldn't work : Goal.concl goal wouldn't type check *)
+    begin fun goal ->
+	  let env = Goal.env goal in
+	  let concl = Goal.concl goal in
+	  Refine.refine (fun sigma -> exact_modulo env sigma thm concl)
+    end
+    
 VERNAC COMMAND EXTEND DeclareSurjection
-| [ "Declare" "Surjection" constr(f) "by" "(" constr(g) "," constr(proof) ")" ]
+| [ "Declare" "Surjection" reference(f)
+	      "by" "(" reference(g) "," reference(proof) ")" ]
   -> [ add_surjection f g proof ]
 END
 
 VERNAC COMMAND EXTEND DeclareTransfer
 | [ "Declare" "Transfer" constr(f) constr(r) constr(r')
-              "by" constr(proof) ]
+	      "by" constr(proof) ]
   -> [ add_transfer f r r' proof ]
 END       
 
