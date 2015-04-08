@@ -83,10 +83,18 @@ let add_transfer f r r' proof =
   transfers := PairConstrMap.add key (f, r, r', proofterm) !transfers
 
 exception Unif_failure
-let rec apply_modulo env sigma holes concl1 concl2 =
-  match kind_of_term concl1 , kind_of_term concl2 with
-  | Lambda (_, t1, c1) , Lambda (_, t2, c2) -> failwith "TODO"
+(* apply_modulo takes a theorem to apply and a goal
+   and construct a proof term corresponding to the
+   application of the theorem in the context of the
+   goal so that it works modulo isomorphism *)
+let rec apply_modulo env sigma thm cl concl =
+  match kind_of_term thm , kind_of_term concl with
+  | Lambda (_, t1, c1) , Lambda (_, t2, c2) ->
+     (* exact match *)
+     (* extend environment before recursive call *)
+     failwith "TODO"
   | App (f1 , l1) , App (f2 , l2) ->
+     (* try exact match first *)
      begin try
          let sigma , e = apply_modulo env sigma holes f1 f2 in
          let sigma , el = List.fold_left2 (fun (sigma, acc) t1 t2 ->
@@ -97,9 +105,17 @@ let rec apply_modulo env sigma holes concl1 concl2 =
          in
          (* coq_eq_rect has not the right type *)
          sigma , mkApp (mkConst (coq_eq_rect ()), [|failwith "TODO"|])
-       with Unif_failure -> failwith "TODO"
+       with Unif_failure ->
+	 (* there may be a conversion required *)
+	 failwith "TODO"
      end
-  | Prod (_, t1, t2), Prod (_, t3, t4) -> failwith "TODO"
+  | Prod (_, t1, t2), Prod (_, t3, t4) ->
+     (* try exact match first *)
+     begin try
+	 failwith "TODO"
+       with Unif_failure ->
+	    (* there may be a conversion required *)
+	    failwith "TODO"
   | _ -> failwith "TODO"
 
 let apply_modulo_tactic (sigma, thm) = (* Of what use is this sigma? *)
@@ -111,7 +127,7 @@ let apply_modulo_tactic (sigma, thm) = (* Of what use is this sigma? *)
        (fun sigma -> (* sigma has been masked *)
         let t = Retyping.get_type_of env sigma concl in
         let sigma, cl = Clenv.make_evar_clause env sigma t in
-        apply_modulo env sigma cl.cl_holes cl.cl_concl concl
+        apply_modulo env sigma thm cl concl
        )
     )
                                   
