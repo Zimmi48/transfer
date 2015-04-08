@@ -95,7 +95,9 @@ let rec apply_modulo env sigma thm cl concl =
      failwith "TODO"
   | App (f1 , l1) , App (f2 , l2) ->
      (* try exact match first *)
+     (* the relation f1 f2 must correspond : exactly or modulo conversion? *)
      begin try
+	 (*
          let sigma , e = apply_modulo env sigma holes f1 f2 in
          let sigma , el = List.fold_left2 (fun (sigma, acc) t1 t2 ->
                           let sigma , e =
@@ -105,24 +107,28 @@ let rec apply_modulo env sigma thm cl concl =
          in
          (* coq_eq_rect has not the right type *)
          sigma , mkApp (mkConst (coq_eq_rect ()), [|failwith "TODO"|])
+          *)
+	 failwith "TODO"
        with Unif_failure ->
-	 (* there may be a conversion required *)
+	 (* there may be a transfer required *)
 	 failwith "TODO"
      end
   | Prod (_, t1, t2), Prod (_, t3, t4) ->
      (* try exact match first *)
+     (* t1 and t3 must correspond: exactly or modulo conversion? *)
      begin try
 	 failwith "TODO"
        with Unif_failure ->
-	    (* there may be a conversion required *)
+	    (* there may be a transfer required *)
 	    failwith "TODO"
+     end
   | _ -> failwith "TODO"
 
 let apply_modulo_tactic (sigma, thm) = (* Of what use is this sigma? *)
   Goal.nf_enter (* or enter ? *)
     (fun goal ->
      let env = Goal.env goal in
-     let concl = Goal.concl goal in
+     let concl = Goal.concl goal in (* what is concl exactly? *)
      Refine.refine
        (fun sigma -> (* sigma has been masked *)
         let t = Retyping.get_type_of env sigma concl in
