@@ -143,6 +143,7 @@ let add_transfer f r r' proof =
 	 | _ -> Errors.error "Some arguments have a wrong type."
        in
        check r_typ r'_typ thm []
+    | _ -> Errors.error "f has not a function type."
   in
   let key = (r_rel, r'_rel) in
   transfers := PMap.add key (f_fun, proofterm) !transfers
@@ -152,7 +153,7 @@ exception UnifFailure
    and construct a proof term for the goal *)
 let rec exact_modulo env sigma thm concl : Evd.evar_map * Constr.t =
   match kind_of_term thm , kind_of_term concl with
-  | App (f1 , l1) , App (f2 , l2) -> failwith "app";
+  | App (f1 , l1) , App (f2 , l2) ->
      
      (* OLD CODE BEGINS
          let sigma , e = exact_modulo env sigma holes f1 f2 in
@@ -165,11 +166,11 @@ let rec exact_modulo env sigma thm concl : Evd.evar_map * Constr.t =
          (* coq_eq_rect has not the right type *)
          sigma , mkApp (mkConst (coq_eq_rect ()), [|failwith "TODO"|])
          OLD CODE ENDS *)
-     
+
      (* try exact match first *)
-     if Constr.equal f1 f2 then
-       (* the relation f1 f2 must correspond : exactly or modulo conversion? *)
-       failwith "TODO: check unification -> proof term reflexivity"
+     let sigma, return = Reductionops.infer_conv env sigma f1 f2 in
+     if return then
+       sigma, Universes.constr_of_global (build_coq_eq_data ()).refl
      else (* there may be a transfer required *)
        begin try
 	   let (surj, proof) = PMap.find (f1, f2) !transfers in
@@ -177,12 +178,12 @@ let rec exact_modulo env sigma thm concl : Evd.evar_map * Constr.t =
 	 with Not_found -> raise UnifFailure
        end
 
-  | Prod (name, t1, t2), Prod (_, t3, t4) -> failwith "prod";
+  | Prod (name, t1, t2), Prod (_, t3, t4) ->
      let sigma, return = Reductionops.infer_conv env sigma t1 t3 in
      if return then (* if t1 = t3 *)
        let new_env = Environ.push_rel (name, None, t1) env in
        let sigma, p_rec = exact_modulo new_env sigma t2 t4 in
-       failwith "TODO: construct proof term"
+       failwith "TODO: construct proof term (fun x => p_rec x)"
      else (* there may be a transfer required *)
        begin try
 	   let (surj, inv, proof) = PMap.find (t1, t3) !surjections in
@@ -196,12 +197,14 @@ let rec exact_modulo env sigma thm concl : Evd.evar_map * Constr.t =
      else
        Errors.error "Cannot unify."
 
-let exact_modulo_tactic (_, thm) = (* Of what use is this evd _? *)
+let exact_modulo_tactic (_, proof) = (* Of what use is this evd _? *)
   Goal.nf_enter (* enter wouldn't work : Goal.concl goal wouldn't type check *)
     begin fun goal ->
 	  let env = Goal.env goal in
 	  let concl = Goal.concl goal in
-	  Refine.refine (fun sigma -> exact_modulo env sigma thm concl)
+	  Refine.refine (fun sigma ->
+			 let thm = Retyping.get_type_of env sigma proof in
+			 exact_modulo env sigma thm concl)
     end
     
 VERNAC COMMAND EXTEND DeclareSurjection
