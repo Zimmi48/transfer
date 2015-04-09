@@ -50,50 +50,49 @@ let add_surjection f g proof =
   let f_fun , f_typ = constr_and_type_of_ref f in
   let g_fun , g_typ = constr_and_type_of_ref g in
   let key =
-    begin match kind_of_term f_typ, kind_of_term g_typ, kind_of_term thm with
-	  | Prod (_, t1, t2), Prod(_, t3, t4), Prod(_, t5, t6) ->
-	     begin try
-		 Reduction.conv env t1 t4; (* modulo conversion *)
-		 Reduction.conv env t2 t3;
-		 Reduction.conv env t2 t5;
-		 let eq_data = build_coq_eq_data () in
-		 let t6 , args = decompose_app t6 in
-		 if not (is_global eq_data.eq t6) then Errors.error "Bad proof";
-		 begin match args with
-		       | [ _ ; fgx ; x ] when isRelN 1 x ->
-			  begin match kind_of_term fgx with
-				| App (f , [| gx |]) ->
-				   Reduction.conv env f f_fun;
-				   begin match kind_of_term gx with
-					 | App (g , [| x |]) when isRelN 1 x ->
-					    Reduction.conv env g g_fun
-					 | _ -> Errors.error "Bad proof."
-				   end
-				| _ -> Errors.error "Bad proof."
-			  end
-		       | _ -> Errors.error "Bad proof."
-		 end;
-	       with Reduction.NotConvertible -> Errors.error "Bad proof."
-	     end;
-	     t1 , t2
-	  | _ -> Errors.error "Bad proof."
-  end in
+    match kind_of_term f_typ, kind_of_term g_typ, kind_of_term thm with
+    | Prod (_, t1, t2), Prod(_, t3, t4), Prod(id_or_anon, t5, t6) ->
+       let name = match id_or_anon with
+	 | Name id -> string_of_id id
+	 | _ -> "?" in
+       begin try
+	   Reduction.conv env t1 t4; (* modulo conversion *)
+	   Reduction.conv env t2 t3;
+	   Reduction.conv env t2 t5;
+	   let eq_data = build_coq_eq_data () in
+	   let t6 , args = decompose_app t6 in
+	   if not (is_global eq_data.eq t6) then
+	     Errors.error "Theorem is not an equality.";
+	   begin match args with
+		 | [ _ ; fgx ; x ] when isRelN 1 x ->
+		    begin match kind_of_term fgx with
+			  | App (f , [| gx |]) ->
+			     Reduction.conv env f f_fun;
+			     begin match kind_of_term gx with
+				   | App (g , [| x |]) when isRelN 1 x ->
+				      Reduction.conv env g g_fun
+				   | _ ->
+				      Errors.error ("In theorem, the term under f should be (g " ^ name ^ ").")
+			     end
+			  | _ -> Errors.error ("In theorem, the left-hand side of the equality should be f (g " ^ name ^ ").")
+		    end
+		 | _ -> Errors.error ("In theorem, the right-hand side of the equality should be " ^ name ^ ".")
+	   end;
+	 with Reduction.NotConvertible -> Errors.error "Types of functions and/or statement of theorem are incompatible."
+       end;
+       t1 , t2
+    | _ -> Errors.error "Some arguments have a wrong type."
+  in
   surjections := PMap.add key
                           (f_fun, g_fun, proofterm)
                           !surjections
 			  
 let add_transfer f r r' proof =
   let env = Global.env () in
-  let sigma = Evd.empty in
-  let proofterm, _ = Constrintern.interp_constr env sigma proof in (* unsafe *)
-  let thm = Retyping.get_type_of env sigma proofterm in
-  let f_fun, _ = Constrintern.interp_constr env sigma f in (* unsafe *)
-  let f_typ = Retyping.get_type_of env sigma f_fun in
-  let r_rel, _ = Constrintern.interp_constr env sigma r in (* unsafe *)
-  let r_typ = Retyping.get_type_of env sigma r_rel in
-  let r'_rel, _ = Constrintern.interp_constr env sigma r' in (* unsafe *)
-  let r'_typ = Retyping.get_type_of env sigma r'_rel in
-  (* Do not forget to check type of proof *)
+  let proofterm , thm = constr_and_type_of_ref proof in
+  let f_fun , f_typ = constr_and_type_of_ref f in
+  let r_rel , r_typ = constr_and_type_of_ref r in
+  let r'_rel , r'_typ = constr_and_type_of_ref r' in
   let key = (r_rel, r'_rel) in
   transfers := PMap.add key (f_fun, proofterm) !transfers
 
@@ -161,8 +160,8 @@ VERNAC COMMAND EXTEND DeclareSurjection
 END
 
 VERNAC COMMAND EXTEND DeclareTransfer
-| [ "Declare" "Transfer" constr(f) constr(r) constr(r')
-	      "by" constr(proof) ]
+| [ "Declare" "Transfer" reference(r) "to" reference(r')
+	      "by" "(" reference(f) "," reference(proof) ")" ]
   -> [ add_transfer f r r' proof ]
 END       
 
