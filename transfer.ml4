@@ -42,8 +42,13 @@ let constr_and_type_of_ref r =
   let constr = Universes.constr_of_global t in
   let typ = fst (Universes.type_of_global t) in (* unsafe *)
   constr, typ
+	    
+let string_of_name = function
+  | Name id -> string_of_id id
+  | _ -> "?"
 			     
-(* Do not forget to check type of proof *)
+(* Do not forget to handle backtracking *)
+(* Better error message would require knowing how to print a term. *)
 let add_surjection f g proof =
   let env = Global.env () in
   let proofterm , thm = constr_and_type_of_ref proof in
@@ -51,10 +56,8 @@ let add_surjection f g proof =
   let g_fun , g_typ = constr_and_type_of_ref g in
   let key =
     match kind_of_term f_typ, kind_of_term g_typ, kind_of_term thm with
-    | Prod (_, t1, t2), Prod(_, t3, t4), Prod(id_or_anon, t5, t6) ->
-       let name = match id_or_anon with
-	 | Name id -> string_of_id id
-	 | _ -> "?" in
+    | Prod (_, t1, t2), Prod(_, t3, t4), Prod(name, t5, t6) ->
+       let name = string_of_name name in
        begin try
 	   Reduction.conv env t1 t4; (* modulo conversion *)
 	   Reduction.conv env t2 t3;
@@ -71,8 +74,7 @@ let add_surjection f g proof =
 			     begin match kind_of_term gx with
 				   | App (g , [| x |]) when isRelN 1 x ->
 				      Reduction.conv env g g_fun
-				   | _ ->
-				      Errors.error ("In theorem, the term under f should be (g " ^ name ^ ").")
+				   | _ -> Errors.error ("In theorem, the term under f should be (g " ^ name ^ ").")
 			     end
 			  | _ -> Errors.error ("In theorem, the left-hand side of the equality should be f (g " ^ name ^ ").")
 		    end
@@ -93,6 +95,55 @@ let add_transfer f r r' proof =
   let f_fun , f_typ = constr_and_type_of_ref f in
   let r_rel , r_typ = constr_and_type_of_ref r in
   let r'_rel , r'_typ = constr_and_type_of_ref r' in
+  let _ = match kind_of_term f_typ with
+    | Prod (_, t1, t2) ->
+       let rec check r r' thm args =
+	 match kind_of_term r, kind_of_term r', kind_of_term thm with
+	 (* the relation takes more arguments *)
+	 (* for the moment we assume that all arguments are of respective
+            types t1 and t2. A more general form would be to allow any other
+            type provided that t3 = t5 = t7. *)
+	 | Prod (_, t3, t4), Prod(_, t5, t6), Prod(name, t7, t8) ->
+	    begin try
+		Reduction.conv env t1 t3;
+		Reduction.conv env t2 t5;
+		Reduction.conv env t3 t7;
+		check t4 t6 t8 (string_of_name name :: args)
+	      with Reduction.NotConvertible -> Errors.error "Types of functions and/or statement of theorem are incompatible."
+	    end
+	 (* the relation has no more arguments *)
+	 | Sort _ , Sort _ , Prod(_, hyp, concl) ->
+	    begin match kind_of_term hyp, kind_of_term concl with
+		  | App (r , r_args) , App (r' , r'_args) ->
+		     begin try
+			 Reduction.conv env r r_rel;
+			 Reduction.conv env r' r'_rel;
+			 (* by type-checking we are sure that args, r_args and
+                            r'_args have the same length *)
+			 (* 1. check that the hypothesis has the right form *)
+			 let n = Array.length r_args in
+			 for i = 0 to n - 1 do
+			   if not (isRelN (n - i) r_args.(i)) then
+			     Errors.error ("In hypothesis, argument " ^ string_of_int (i + 1) ^ " should be " ^ (List.nth args (n - i - 1)) ^ ".")
+			 done;
+			 (* 2. check that the conclusion has the right form *)
+			 for i = 0 to n - 1 do
+			   try match kind_of_term r'_args.(i) with
+			       | App (f , [| x |]) when isRelN (n - i + 1) x ->
+				  (* de Bruijn indices are shifted because of
+                                     the hypothesis *)
+				  Reduction.conv env f_fun f
+			       | _ -> raise Reduction.NotConvertible
+			   with Reduction.NotConvertible -> Errors.error ("In conclusion, argument " ^ string_of_int (i + 1) ^ " should be (f " ^ (List.nth args (n - i - 1)) ^ ").")
+			 done			 
+		       with Reduction.NotConvertible -> Errors.error "The hypothesis and conclusion should be formed of the appropriate relation applied to arguments."
+		     end
+		  | _ -> Errors.error "The theorem has a wrong form."
+	    end
+	 | _ -> Errors.error "Some arguments have a wrong type."
+       in
+       check r_typ r'_typ thm []
+  in
   let key = (r_rel, r'_rel) in
   transfers := PMap.add key (f_fun, proofterm) !transfers
 
@@ -101,7 +152,7 @@ exception UnifFailure
    and construct a proof term for the goal *)
 let rec exact_modulo env sigma thm concl : Evd.evar_map * Constr.t =
   match kind_of_term thm , kind_of_term concl with
-  | App (f1 , l1) , App (f2 , l2) ->
+  | App (f1 , l1) , App (f2 , l2) -> failwith "app";
      
      (* OLD CODE BEGINS
          let sigma , e = exact_modulo env sigma holes f1 f2 in
@@ -126,7 +177,7 @@ let rec exact_modulo env sigma thm concl : Evd.evar_map * Constr.t =
 	 with Not_found -> raise UnifFailure
        end
 
-  | Prod (name, t1, t2), Prod (_, t3, t4) ->
+  | Prod (name, t1, t2), Prod (_, t3, t4) -> failwith "prod";
      let sigma, return = Reductionops.infer_conv env sigma t1 t3 in
      if return then (* if t1 = t3 *)
        let new_env = Environ.push_rel (name, None, t1) env in
