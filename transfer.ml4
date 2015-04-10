@@ -151,9 +151,9 @@ let add_transfer f r r' proof =
 (* exact_modulo takes a theorem corresponding to a goal modulo isomorphism
    and construct a proof term for the goal *)
 let rec exact_modulo env sigma proofterm thm concl : Evd.evar_map * Constr.t =
-  match kind_of_term proofterm , kind_of_term thm , kind_of_term concl with
+  match kind_of_term thm , kind_of_term concl with
 
-  | _ , App (f1 , l1) , App (f2 , l2) ->
+  | App (f1 , l1) , App (f2 , l2) ->
      (* try exact match first *)
      let sigma', return = Reductionops.infer_conv env sigma f1 f2 in
      if return then
@@ -196,12 +196,13 @@ let rec exact_modulo env sigma proofterm thm concl : Evd.evar_map * Constr.t =
        else
 	 Errors.error ("Cannot unify the arguments in position " ^ string_of_int !i ^ ".") (* of f1 and f2 *)
 
-  | Lambda(x, typ, p) , Prod (name, t1, t2) , Prod (_, t3, t4) ->
-     (* check that pt1 = t1 and recurse on p *)
+  | Prod (name, t1, t2) , Prod (_, t3, t4) ->
      let sigma, return = Reductionops.infer_conv env sigma t1 t3 in
      if return then (* if t1 = t3 *)
        let new_env = Environ.push_rel (name, None, t1) env in
-       let sigma, p_rec = exact_modulo new_env sigma p t2 t4 in
+       let sigma, p_rec = exact_modulo new_env sigma
+				       (mkApp (proofterm, [| mkRel 1 |]))
+				       t2 t4 in
        failwith "TODO: construct proof term (fun x => p_rec x)"
      else (* there may be a transfer required *)
        begin try
