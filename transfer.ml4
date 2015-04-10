@@ -148,34 +148,36 @@ let add_transfer f r r' proof =
   let key = (r_rel, r'_rel) in
   transfers := PMap.add key (f_fun, proofterm) !transfers
 
-exception UnifFailure
 (* exact_modulo takes a theorem corresponding to a goal modulo isomorphism
    and construct a proof term for the goal *)
 let rec exact_modulo env sigma thm concl : Evd.evar_map * Constr.t =
   match kind_of_term thm , kind_of_term concl with
-  | App (f1 , l1) , App (f2 , l2) ->
-     
-     (* OLD CODE BEGINS
-         let sigma , e = exact_modulo env sigma holes f1 f2 in
-         let sigma , el = List.fold_left2 (fun (sigma, acc) t1 t2 ->
-                          let sigma , e =
-                            exact_modulo env sigma holes t1 t2 in
-                          sigma , e :: acc
-                         ) (sigma, []) (Array.to_list l1) (Array.to_list l2)
-         in
-         (* coq_eq_rect has not the right type *)
-         sigma , mkApp (mkConst (coq_eq_rect ()), [|failwith "TODO"|])
-         OLD CODE ENDS *)
 
+  | App (f1 , l1) , App (f2 , l2) ->
      (* try exact match first *)
-     let sigma, return = Reductionops.infer_conv env sigma f1 f2 in
-     if return then
-       sigma, Universes.constr_of_global (build_coq_eq_data ()).refl
+     let sigma_return = ref (Reductionops.infer_conv env sigma f1 f2) in
+     if snd (!sigma_return) then
+       (* When we start accepting functions and not just relations,
+          we should recurse in the arguments. *)
+       let n = Array.length l1 in
+       let m = Array.length l2 in
+       if n <> m then Errors.error (* f1 and f2 have *) "Not the same number of arguments.";
+       let i = ref 0 in
+       while snd (!sigma_return) && !i < n do
+	 sigma_return :=
+	   Reductionops.infer_conv env (fst (!sigma_return)) l1.(!i) l2.(!i);
+	 incr i
+       done;
+       if !i = n then
+	 fst (!sigma_return), thm
+	 (*Universes.constr_of_global (build_coq_eq_data ()).refl*)
+       else
+	 Errors.error "Cannot unify the arguments." (* of f1 and f2 *)
      else (* there may be a transfer required *)
        begin try
 	   let (surj, proof) = PMap.find (f1, f2) !transfers in
 	   failwith "TODO: construct proof term"
-	 with Not_found -> raise UnifFailure
+	 with Not_found -> Errors.error "Cannot unify." (* f1 and f2 *)
        end
 
   | Prod (name, t1, t2), Prod (_, t3, t4) ->
@@ -188,8 +190,9 @@ let rec exact_modulo env sigma thm concl : Evd.evar_map * Constr.t =
        begin try
 	   let (surj, inv, proof) = PMap.find (t1, t3) !surjections in
 	   failwith "TODO: recursive call"
-	 with Not_found -> raise UnifFailure
+	 with Not_found -> Errors.error "Cannot unify." (* t1 and t3 *)
        end
+
   | _ ->
      let sigma, return = Reductionops.infer_conv env sigma thm concl in
      if return then
