@@ -150,41 +150,58 @@ let add_transfer f r r' proof =
 
 (* exact_modulo takes a theorem corresponding to a goal modulo isomorphism
    and construct a proof term for the goal *)
-let rec exact_modulo env sigma thm concl : Evd.evar_map * Constr.t =
-  match kind_of_term thm , kind_of_term concl with
+let rec exact_modulo env sigma proofterm thm concl : Evd.evar_map * Constr.t =
+  match kind_of_term proofterm , kind_of_term thm , kind_of_term concl with
 
-  | App (f1 , l1) , App (f2 , l2) ->
+  | _ , App (f1 , l1) , App (f2 , l2) ->
      (* try exact match first *)
-     let sigma_return = ref (Reductionops.infer_conv env sigma f1 f2) in
-     if snd (!sigma_return) then
+     let sigma', return = Reductionops.infer_conv env sigma f1 f2 in
+     if return then
        (* When we start accepting functions and not just relations,
           we should recurse in the arguments. *)
        let n = Array.length l1 in
        let m = Array.length l2 in
        if n <> m then Errors.error (* f1 and f2 have *) "Not the same number of arguments.";
        let i = ref 0 in
+       let sigma_return = ref (sigma', true) in
        while snd (!sigma_return) && !i < n do
 	 sigma_return :=
 	   Reductionops.infer_conv env (fst (!sigma_return)) l1.(!i) l2.(!i);
 	 incr i
        done;
        if !i = n then
-	 fst (!sigma_return), thm
-	 (*Universes.constr_of_global (build_coq_eq_data ()).refl*)
+	 fst (!sigma_return), proofterm
        else
-	 Errors.error "Cannot unify the arguments." (* of f1 and f2 *)
+	 Errors.error ("Cannot unify the arguments in position " ^ string_of_int !i ^ ".") (* of f1 and f2 *)
      else (* there may be a transfer required *)
-       begin try
-	   let (surj, proof) = PMap.find (f1, f2) !transfers in
-	   failwith "TODO: construct proof term"
-	 with Not_found -> Errors.error "Cannot unify." (* f1 and f2 *)
-       end
+       let (surj, proof) = try PMap.find (f1, f2) !transfers
+			   with Not_found -> Errors.error "Cannot unify (no adequate transfer declared)." (* f1 and f2 *) in
+       (* for now, PMap.find is based on Constr.equal but if we decide to look
+          in the table modulo unification, then we will have to get back a
+          sigma *)
+       let n = Array.length l1 in
+       let m = Array.length l2 in
+       if n <> m then Errors.error (* f1 and f2 have *) "Not the same number of arguments.";
+       let i = ref 0 in
+       let sigma_return = ref (sigma, true) in
+       while snd (!sigma_return) && !i < n do
+	 sigma_return := Reductionops.infer_conv env
+						 (fst (!sigma_return))
+						 (mkApp (surj , [| l1.(!i) |]))
+						 l2.(!i);
+	 incr i
+       done;
+       if !i = n then
+	 fst (!sigma_return), mkApp (mkApp (proof, l1) , [| proofterm |])
+       else
+	 Errors.error ("Cannot unify the arguments in position " ^ string_of_int !i ^ ".") (* of f1 and f2 *)
 
-  | Prod (name, t1, t2), Prod (_, t3, t4) ->
+  | Lambda(x, typ, p) , Prod (name, t1, t2) , Prod (_, t3, t4) ->
+     (* check that pt1 = t1 and recurse on p *)
      let sigma, return = Reductionops.infer_conv env sigma t1 t3 in
      if return then (* if t1 = t3 *)
        let new_env = Environ.push_rel (name, None, t1) env in
-       let sigma, p_rec = exact_modulo new_env sigma t2 t4 in
+       let sigma, p_rec = exact_modulo new_env sigma p t2 t4 in
        failwith "TODO: construct proof term (fun x => p_rec x)"
      else (* there may be a transfer required *)
        begin try
@@ -196,7 +213,8 @@ let rec exact_modulo env sigma thm concl : Evd.evar_map * Constr.t =
   | _ ->
      let sigma, return = Reductionops.infer_conv env sigma thm concl in
      if return then
-       sigma, Universes.constr_of_global (build_coq_eq_data ()).refl
+       sigma, proofterm
+       (* Universes.constr_of_global (build_coq_eq_data ()).refl *)
      else
        Errors.error "Cannot unify."
 
@@ -207,7 +225,7 @@ let exact_modulo_tactic (_, proof) = (* Of what use is this evd _? *)
 	  let concl = Goal.concl goal in
 	  Refine.refine (fun sigma ->
 			 let thm = Retyping.get_type_of env sigma proof in
-			 exact_modulo env sigma thm concl)
+			 exact_modulo env sigma proof thm concl)
     end
     
 VERNAC COMMAND EXTEND DeclareSurjection
