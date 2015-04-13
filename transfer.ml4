@@ -18,6 +18,8 @@ open Clenv
 open Coqlib
 open Constrexpr
 open Globnames
+open Printer
+open Pp
        
 module PairConstr =
   struct
@@ -57,15 +59,15 @@ let add_surjection f g proof =
   let g_fun , g_typ = constr_and_type_of_ref g in
   let key =
     match kind_of_term f_typ, kind_of_term g_typ, kind_of_term thm with
-    | Prod (_, t1, t2), Prod(_, t3, t4), Prod(name, t5, t6) ->
-       let name = string_of_name name in
+    | Prod (_, t1, t2), Prod(_, t3, t4), Prod(id_or_anon, t5, t6) ->
+       let name = string_of_name id_or_anon in
        begin try
 	   Reduction.conv env t1 t4; (* modulo conversion *)
 	   Reduction.conv env t2 t3;
 	   Reduction.conv env t2 t5;
-	   let t6 , args = decompose_app t6 in
-	   if not (is_global (build_coq_eq ()) t6) then
-	     Errors.error "Theorem is not an equality.";
+	   let hd , args = decompose_app t6 in
+	   if not (is_global (build_coq_eq ()) hd) then
+	     Errors.errorlabstrm "" (str "In statement of " ++ pr_lconstr proofterm ++ str ", "++  pr_lconstr_env (Environ.push_rel (id_or_anon,None,t5) env) Evd.empty t6 ++ str " is not an equality.");
 	   begin match args with
 		 | [ _ ; fgx ; x ] when isRelN 1 x ->
 		    begin match kind_of_term fgx with
@@ -150,6 +152,8 @@ let add_transfer f r r' proof =
 
 (* exact_modulo takes a theorem corresponding to a goal modulo isomorphism
    and construct a proof term for the goal *)
+(* rather than taking a proofterm in argument, exact_modulo should build
+   a function from thm to concl *)
 let rec exact_modulo env sigma proofterm thm concl : Evd.evar_map * Constr.t =
   match kind_of_term thm , kind_of_term concl with
 
@@ -198,38 +202,36 @@ let rec exact_modulo env sigma proofterm thm concl : Evd.evar_map * Constr.t =
 
   | Prod (_, t1, t2) , Prod (name, t3, t4) ->
      let new_env = Environ.push_rel (name, None, t3) env in
-     let sigma', return = Reductionops.infer_conv env sigma t1 t3 in
-     if return then (* if t1 = t3 *)
-       let sigma, p_rec = exact_modulo new_env sigma'
-				       (mkApp (proofterm, [| mkRel 1 |]))
-				       t2 t4 in
-       sigma, mkLambda (name, t3, p_rec)
-     else (* there may be a transfer required *)
-       let (surj, inv, proof) = try PMap.find (t1, t3) !surjections
-				with Not_found -> Errors.error "Cannot unify (no adequate surjection declared)." (* t1 and t3 *) in
-       (* for now, PMap.find is based on Constr.equal but if we decide to look
-          in the table modulo unification, then we will have to get back a
-          sigma *)
-       let sigma, p_rec =
-	 exact_modulo new_env sigma
-		      (mkApp (proofterm, [| mkApp (inv, [| mkRel 1 |]) |]))
-		      (subst1 (mkApp (inv, [| mkRel 1 |])) t2)
-		      (* substitute all occurrences of x with (inv x) *)
-		      (subst1 (mkApp (surj, [| (mkApp (inv, [| mkRel 1 |])) |]))
-			      t4)
-		      (* substitute all occurrences of x with (surj (inv x)) *)
-       in
-       sigma,
-       (* we use eq_ind but we should use eq_rect? *)
-       mkLambda (name, t3,
-		 mkApp (Universes.constr_of_global (build_coq_eq_data ()).ind ,
-			[| t3 ;
-			   mkApp (surj, [| (mkApp (inv, [| mkRel 1 |])) |]) ;
-			   mkLambda (name, t3, t4) ;
-			   p_rec ;
-			   mkRel 1 ;
-			   mkApp (proof , [| mkRel 1 |]) |]))
-
+     let (sigma, unifproof), t2', t4', adapt =
+       try exact_modulo env sigma (mkRel 1) t3 t1, t2, t4, fun x -> x
+       with
+	 Errors.UserError _ -> (* there may be a transfer required *)
+	 let (surj, inv, proof) = try PMap.find (t1, t3) !surjections
+				  with Not_found -> Errors.error "Cannot unify (no adequate surjection declared)." (* t1 and t3 *) in
+	 (* for now, PMap.find is based on Constr.equal but if we decide to look
+            in the table modulo unification, then we will have to get back a
+            sigma *)
+	 let unifproof = mkApp (inv, [| mkRel 1 |]) in
+	 let t2' = subst1 (mkApp (inv, [| mkRel 1 |])) t2 in
+	 (* substitute all occurrences of x with (inv x) *)
+	 let t4' = subst1 (mkApp (surj, [| (mkApp (inv, [| mkRel 1 |])) |])) t4
+	 in (* substitutes all occurrences of x with (surj (inv x)) *)
+	 (* we use eq_ind but we should use eq_rect? *)
+	 let adapt p_rec =
+	   mkApp (Universes.constr_of_global (build_coq_eq_data ()).ind ,
+		  [| t3 ;
+		     mkApp (surj, [| (mkApp (inv, [| mkRel 1 |])) |]) ;
+		     mkLambda (name, t3, t4) ;
+		     p_rec ;
+		     mkRel 1 ;
+		     mkApp (proof , [| mkRel 1 |]) |]) in
+	 (sigma, unifproof), t2', t4', adapt
+     in
+     let sigma, p_rec = exact_modulo new_env sigma
+				     (mkApp (proofterm, [| unifproof |]))
+				     t2' t4' in
+     sigma, mkLambda (name, t3, adapt p_rec)
+       
   | _ ->
      let sigma, return = Reductionops.infer_conv env sigma thm concl in
      if return then
