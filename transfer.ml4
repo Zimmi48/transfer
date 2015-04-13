@@ -12,6 +12,7 @@ DECLARE PLUGIN "transfer"
 
 open Names
 open Term
+open Vars
 open Proofview
 open Clenv
 open Coqlib
@@ -62,9 +63,8 @@ let add_surjection f g proof =
 	   Reduction.conv env t1 t4; (* modulo conversion *)
 	   Reduction.conv env t2 t3;
 	   Reduction.conv env t2 t5;
-	   let eq_data = build_coq_eq_data () in
 	   let t6 , args = decompose_app t6 in
-	   if not (is_global eq_data.eq t6) then
+	   if not (is_global (build_coq_eq ()) t6) then
 	     Errors.error "Theorem is not an equality.";
 	   begin match args with
 		 | [ _ ; fgx ; x ] when isRelN 1 x ->
@@ -196,26 +196,44 @@ let rec exact_modulo env sigma proofterm thm concl : Evd.evar_map * Constr.t =
        else
 	 Errors.error ("Cannot unify the arguments in position " ^ string_of_int !i ^ ".") (* of f1 and f2 *)
 
-  | Prod (name, t1, t2) , Prod (_, t3, t4) ->
-     let sigma, return = Reductionops.infer_conv env sigma t1 t3 in
+  | Prod (_, t1, t2) , Prod (name, t3, t4) ->
+     let new_env = Environ.push_rel (name, None, t3) env in
+     let sigma', return = Reductionops.infer_conv env sigma t1 t3 in
      if return then (* if t1 = t3 *)
-       let new_env = Environ.push_rel (name, None, t1) env in
-       let sigma, p_rec = exact_modulo new_env sigma
+       let sigma, p_rec = exact_modulo new_env sigma'
 				       (mkApp (proofterm, [| mkRel 1 |]))
 				       t2 t4 in
-       failwith "TODO: construct proof term (fun x => p_rec x)"
+       sigma, mkLambda (name, t3, p_rec)
      else (* there may be a transfer required *)
-       begin try
-	   let (surj, inv, proof) = PMap.find (t1, t3) !surjections in
-	   failwith "TODO: recursive call"
-	 with Not_found -> Errors.error "Cannot unify." (* t1 and t3 *)
-       end
+       let (surj, inv, proof) = try PMap.find (t1, t3) !surjections
+				with Not_found -> Errors.error "Cannot unify (no adequate surjection declared)." (* t1 and t3 *) in
+       (* for now, PMap.find is based on Constr.equal but if we decide to look
+          in the table modulo unification, then we will have to get back a
+          sigma *)
+       let sigma, p_rec =
+	 exact_modulo new_env sigma
+		      (mkApp (proofterm, [| mkApp (inv, [| mkRel 1 |]) |]))
+		      (subst1 (mkApp (inv, [| mkRel 1 |])) t2)
+		      (* substitute all occurrences of x with (inv x) *)
+		      (subst1 (mkApp (surj, [| (mkApp (inv, [| mkRel 1 |])) |]))
+			      t4)
+		      (* substitute all occurrences of x with (surj (inv x)) *)
+       in
+       sigma,
+       (* we use eq_ind but we should use eq_rect? *)
+       mkLambda (name, t3,
+		 mkApp (Universes.constr_of_global (build_coq_eq_data ()).ind ,
+			[| t3 ;
+			   mkApp (surj, [| (mkApp (inv, [| mkRel 1 |])) |]) ;
+			   mkLambda (name, t3, t4) ;
+			   p_rec ;
+			   mkRel 1 ;
+			   mkApp (proof , [| mkRel 1 |]) |]))
 
   | _ ->
      let sigma, return = Reductionops.infer_conv env sigma thm concl in
      if return then
        sigma, proofterm
-       (* Universes.constr_of_global (build_coq_eq_data ()).refl *)
      else
        Errors.error "Cannot unify."
 
