@@ -65,9 +65,10 @@ let add_surjection f g proof =
 	   Reduction.conv env t1 t4; (* modulo conversion *)
 	   Reduction.conv env t2 t3;
 	   Reduction.conv env t2 t5;
+	   let new_env = Environ.push_rel (id_or_anon,None,t5) env in
 	   let hd , args = decompose_app t6 in
 	   if not (is_global (build_coq_eq ()) hd) then
-	     Errors.errorlabstrm "" (str "In statement of " ++ pr_lconstr proofterm ++ str ", "++  pr_lconstr_env (Environ.push_rel (id_or_anon,None,t5) env) Evd.empty t6 ++ str " is not an equality.");
+	     Errors.errorlabstrm "" (str "In the statement of " ++ pr_lconstr proofterm ++ str ", " ++ pr_lconstr_env new_env Evd.empty t6 ++ str " is not an equality.");
 	   begin match args with
 		 | [ _ ; fgx ; x ] when isRelN 1 x ->
 		    begin match kind_of_term fgx with
@@ -76,7 +77,7 @@ let add_surjection f g proof =
 			     begin match kind_of_term gx with
 				   | App (g , [| x |]) when isRelN 1 x ->
 				      Reduction.conv env g g_fun
-				   | _ -> Errors.error ("In theorem, the term under f should be (g " ^ name ^ ").")
+				   | _ -> Errors.errorlabstrm "" (str "In the statement of " ++ pr_lconstr proofterm ++ str ", cannot unify " ++ pifb () ++ pr_lconstr_env new_env Evd.empty gx ++ str " and " ++ pr_lconstr_env new_env Evd.empty (mkApp (g_fun, [| mkRel 1 |])) ++ str ".")
 			     end
 			  | _ -> Errors.error ("In theorem, the left-hand side of the equality should be f (g " ^ name ^ ").")
 		    end
@@ -155,7 +156,8 @@ let add_transfer f r r' proof =
 (* rather than taking a proofterm in argument, exact_modulo should build
    a function from thm to concl *)
 let rec exact_modulo env sigma proofterm thm concl : Evd.evar_map * Constr.t =
-  match kind_of_term thm , kind_of_term concl with
+  match kind_of_term (Reductionops.whd_betaiotazeta sigma thm) ,
+	kind_of_term (Reductionops.whd_betaiotazeta sigma concl) with
 
   | App (f1 , l1) , App (f2 , l2) ->
      (* try exact match first *)
@@ -179,7 +181,9 @@ let rec exact_modulo env sigma proofterm thm concl : Evd.evar_map * Constr.t =
 	 Errors.error ("Cannot unify the arguments in position " ^ string_of_int !i ^ ".") (* of f1 and f2 *)
      else (* there may be a transfer required *)
        let (surj, proof) = try PMap.find (f1, f2) !transfers
-			   with Not_found -> Errors.error "Cannot unify (no adequate transfer declared)." (* f1 and f2 *) in
+			   with Not_found ->
+			     (* if const recurse after one step of delta *)
+			     Errors.errorlabstrm "" (str "Cannot unify " ++ pr_lconstr f1 ++ str " and " ++ pr_lconstr f2 ++ str "(no adequate transfer declared).") in
        (* for now, PMap.find is based on Constr.equal but if we decide to look
           in the table modulo unification, then we will have to get back a
           sigma *)
@@ -198,16 +202,16 @@ let rec exact_modulo env sigma proofterm thm concl : Evd.evar_map * Constr.t =
        if !i = n then
 	 fst (!sigma_return), mkApp (mkApp (proof, l1) , [| proofterm |])
        else
-	 Errors.error ("Cannot unify the arguments in position " ^ string_of_int !i ^ ".") (* of f1 and f2 *)
+	 Errors.errorlabstrm "" (str "Cannot unify " ++ pifb () ++ pr_lconstr_env env (fst (!sigma_return)) (mkApp (surj , [| l1.(!i - 1) |])) ++ str " and " ++ pr_lconstr_env env (fst (!sigma_return)) l2.(!i - 1) ++ str ".")
 
   | Prod (_, t1, t2) , Prod (name, t3, t4) ->
      let new_env = Environ.push_rel (name, None, t3) env in
      let (sigma, unifproof), t2', t4', adapt =
        try exact_modulo env sigma (mkRel 1) t3 t1, t2, t4, fun x -> x
        with
-	 Errors.UserError _ -> (* there may be a transfer required *)
+	 Errors.UserError _ as x -> (* there may be a transfer required *)
 	 let (surj, inv, proof) = try PMap.find (t1, t3) !surjections
-				  with Not_found -> Errors.error "Cannot unify (no adequate surjection declared)." (* t1 and t3 *) in
+				  with Not_found -> raise x in
 	 (* for now, PMap.find is based on Constr.equal but if we decide to look
             in the table modulo unification, then we will have to get back a
             sigma *)
@@ -218,7 +222,7 @@ let rec exact_modulo env sigma proofterm thm concl : Evd.evar_map * Constr.t =
 	 in (* substitutes all occurrences of x with (surj (inv x)) *)
 	 (* we use eq_ind but we should use eq_rect? *)
 	 let adapt p_rec =
-	   mkApp (Universes.constr_of_global (build_coq_eq_data ()).ind ,
+	   mkApp (Universes.constr_of_global (Indrec.lookup_eliminator (fst (destInd (Universes.constr_of_global (build_coq_eq ())))) InType),
 		  [| t3 ;
 		     mkApp (surj, [| (mkApp (inv, [| mkRel 1 |])) |]) ;
 		     mkLambda (name, t3, t4) ;
