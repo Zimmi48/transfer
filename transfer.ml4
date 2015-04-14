@@ -51,7 +51,6 @@ let string_of_name = function
   | _ -> "?"
 			     
 (* Do not forget to handle backtracking *)
-(* Better error message would require knowing how to print a term. *)
 let add_surjection f g proof =
   let env = Global.env () in
   let proofterm , thm = constr_and_type_of_ref proof in
@@ -79,9 +78,9 @@ let add_surjection f g proof =
 				      Reduction.conv env g g_fun
 				   | _ -> Errors.errorlabstrm "" (str "In the statement of " ++ pr_lconstr proofterm ++ str ", cannot unify " ++ pifb () ++ pr_lconstr_env new_env Evd.empty gx ++ str " and " ++ pr_lconstr_env new_env Evd.empty (mkApp (g_fun, [| mkRel 1 |])) ++ str ".")
 			     end
-			  | _ -> Errors.error ("In theorem, the left-hand side of the equality should be f (g " ^ name ^ ").")
+			  | _ -> Errors.errorlabstrm "" (str "In the statement of " ++ pr_lconstr proofterm ++ str ", the left-hand side of the equality should be " ++ pifb () ++ pr_lconstr_env new_env Evd.empty (mkApp (f_fun, [| (mkApp (g_fun, [| mkRel 1 |])) |])) ++ str " instead of " ++ pr_lconstr_env new_env Evd.empty fgx ++ str ".")
 		    end
-		 | _ -> Errors.error ("In theorem, the right-hand side of the equality should be " ^ name ^ ".")
+		 | _ -> Errors.errorlabstrm "" (str "In the statement of " ++ pr_lconstr proofterm ++ str (", the right-hand side of the equality should be " ^ name ^ "."))
 	   end;
 	 with Reduction.NotConvertible -> Errors.error "Types of functions and/or statement of theorem are incompatible."
        end;
@@ -137,7 +136,7 @@ let add_transfer f r r' proof =
                                      the hypothesis *)
 				  Reduction.conv env f_fun f
 			       | _ -> raise Reduction.NotConvertible
-			   with Reduction.NotConvertible -> Errors.error ("In conclusion, argument " ^ string_of_int (i + 1) ^ " should be (f " ^ (List.nth args (n - i - 1)) ^ ").")
+			   with Reduction.NotConvertible -> Errors.errorlabstrm "" (str "In conclusion " ++ pr_lconstr concl ++ str (", argument " ^ string_of_int (i + 1) ^ " should be ") ++ pr_lconstr f_fun ++ str ((List.nth args (n - i - 1)) ^ "."))
 			 done			 
 		       with Reduction.NotConvertible -> Errors.error "The hypothesis and conclusion should be formed of the appropriate relation applied to arguments."
 		     end
@@ -146,7 +145,7 @@ let add_transfer f r r' proof =
 	 | _ -> Errors.error "Some arguments have a wrong type."
        in
        check r_typ r'_typ thm []
-    | _ -> Errors.error "f has not a function type."
+    | _ -> Errors.errorlabstrm "" (pr_lconstr f_fun ++ str " has not a function type.")
   in
   let key = (r_rel, r'_rel) in
   transfers := PMap.add key (f_fun, proofterm) !transfers
