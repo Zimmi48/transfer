@@ -198,71 +198,64 @@ let rec exact_modulo env sigma thm concl : Evd.evar_map * Constr.t =
        done;
        if !i = n then
 	 fst (!sigma_return),
-	 mkLambda(Anonymous, thm, mkApp (mkApp (proof, l1) , [| mkRel 1 |]))
+	 mkLambda(Anonymous, thm,
+		  mkApp (mkApp (proof,
+				Array.map (lift 1) l1) ,
+			 [| mkRel 1 |]))
        else
 	 Errors.errorlabstrm "" (str "Cannot unify " ++ pifb () ++ pr_lconstr_env env (fst (!sigma_return)) (mkApp (surj , [| l1.(!i - 1) |])) ++ str " and " ++ pr_lconstr_env env (fst (!sigma_return)) l2.(!i - 1) ++ str ".")
 
   | Prod (_, t1, t2) , Prod (name, t3, t4) ->
-     (* unifproof has type t3 -> t1 *)
-     (* we use eq_ind but we should use eq_rect? *)
-     (* p_rec will have type t2' -> t4'
-        and adapt p_rec will have type t2 -> t4 *)
-     let (sigma, unifproof), t2', t4', adapt =
-       try exact_modulo env sigma t3 t1, t2, t4, fun x -> x
-       with
-	 Errors.UserError _ as x -> (* there may be a transfer required *)
-	 let (surj, inv, surjproof) = try PMap.find (t1, t3) !surjections
-				  with Not_found -> raise x in
-	 (* for now, PMap.find is based on Constr.equal but if we decide to look
-            in the table modulo unification, then we will have to get back a
-            sigma *)
-	 let unifproof = mkLambda(Anonymous, t3, mkApp (inv, [| mkRel 1 |])) in
-	 (* t2', t4' and adapt p_rec are defined in a new_env context
-            with mkRel 1 = x of type t3 *)
-	 let t2' = subst1 (mkApp (inv, [| mkRel 1 |])) t2 in
-	 (* substitute all occurrences of x with (inv x) *)
-	 let t4' = subst1 (mkApp (surj, [| (mkApp (inv, [| mkRel 1 |])) |])) t4
-	 in (* substitutes all occurrences of x with (surj (inv x)) *)
-	 let adapt p_rec =
-	   mkLambda (Anonymous, t2', mkApp (p_rec , [| mkRel 1 |] ))
-	 (*
-	   mkLambda (Anonymous, t2,
-		     mkApp
-		       (* eq_rect *)
-		       (Universes.constr_of_global
-			  (Indrec.lookup_eliminator
-			     (fst
-				(destInd
-				   (Universes.constr_of_global
-				      (build_coq_eq ())
-				   )
-				)
-			     ) InType),
-			[| t3 ;
-			   mkApp (surj, [| (mkApp (inv, [| mkRel 2 |])) |]) ;
-			   mkLambda (name, t3, t4) ;
-			   mkApp
-			     (p_rec,
-			      [| mkApp (mkRel 1,
-					[| mkApp (inv, [| mkRel 2 |]) |]) |]) ;
-			   mkRel 2 ; (* this is x *)
-			   mkApp (surjproof , [| mkRel 2 |]) |])
-		    ) *) in
-	 (sigma, unifproof), t2', t4', adapt
-     in
-     let new_env = Environ.push_rel (name, None, t3) env in
-     let sigma, p_rec = exact_modulo new_env sigma t2' t4' in
-     sigma,
-     mkLambda (Anonymous, thm,
-	       mkLambda (name, t3,
-			 mkApp ((adapt p_rec),
-				[| mkApp (mkRel 2,
-					  [| mkApp (unifproof,
-						    [| mkRel 1 |])
-					    |])
-				  |])
-			))
-       
+     let env = Environ.push_rel (Anonymous, None, thm) env in
+     let sigma', return = Reductionops.infer_conv env sigma t1 t3 in
+     let env = Environ.push_rel (name, None, t3) env in
+     if return then (* if t1 = t3 *)
+       let sigma, p_rec = exact_modulo env sigma' t2 t4 in
+       sigma,
+       mkLambda (Anonymous, thm,
+		 mkLambda (name, t3,
+			   mkApp (p_rec,
+				  [| (mkApp (mkRel 2, [| mkRel 1 |])) |])))
+     else (* there may be a transfer required *)
+       let (surj, inv, proof) = try PMap.find (t1, t3) !surjections
+				with Not_found -> Errors.error "Cannot unify (no adequate surjection declared)." (* t1 and t3 *) in
+       (* for now, PMap.find is based on Constr.equal but if we decide to look
+          in the table modulo unification, then we will have to get back a
+          sigma *)
+       let sigma, p_rec =
+	 exact_modulo env sigma		      
+		      (subst1 (mkApp (inv, [| mkRel 1 |])) t2)
+		      (* substitute all occurrences of x with (inv x) *)
+		      (subst1 (mkApp (surj, [| (mkApp (inv, [| mkRel 1 |])) |]))
+			      t4)
+		      (* substitute all occurrences of x with (surj (inv x)) *)
+       in
+       sigma,
+       mkLambda (Anonymous, thm,
+		 mkLambda (name, t3,
+			   mkApp (
+			       (* eq_rect *)
+			       Universes.constr_of_global
+				 (Indrec.lookup_eliminator
+				    (fst
+				       (destInd
+					  (Universes.constr_of_global
+					     (build_coq_eq ()))))
+				    InType),
+				    
+			       [| t3 ;
+				  mkApp (surj,
+					 [| (mkApp (inv, [| mkRel 1 |])) |]) ;
+				     mkLambda (name, t3, t4) ;
+				     mkApp
+				       (p_rec,
+					[| mkApp
+					     (mkRel 2,
+					      [| mkApp (inv,
+							[| mkRel 1 |]) |]) |]) ;
+				     mkRel 1 ;
+				     mkApp (proof , [| mkRel 1 |]) |])))
+
   | _ ->
      let sigma, return = Reductionops.infer_conv env sigma thm concl in
      if return then
