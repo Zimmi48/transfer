@@ -1,13 +1,6 @@
 (* Apply a theorem modulo isomorphism *)
 (*   Copyright Théo Zimmermann 2015   *)
 
-(* How to use (with Coq 8.5 trunk):
- * $ coq_makefile transfer.ml4 -o Makefile
- * $ make
- * $ coqtop -load-ml-object transfer.cmxs
- * Coq < Declare ML Module "t".
- *)
-
 DECLARE PLUGIN "transfer"
 
 open Names
