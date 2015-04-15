@@ -4,6 +4,7 @@ Makefile
 *.cm*
 *.ml4.d
 *.o
+*~
 
 # tests
 transfer.v
