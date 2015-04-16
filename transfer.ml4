@@ -145,7 +145,7 @@ let add_transfer f r r' proof =
 
 (* given types thm and concl, exact_modulo tries to automatically prove
    thm -> concl by using transfer and surjection lemmas previously declared *)
-let rec exact_modulo env sigma thm concl : Evd.evar_map * Constr.t =
+let rec exact_modulo env sigma thm concl proofthm : Evd.evar_map * Constr.t =
   match kind_of_term (Reductionops.whd_betaiotazeta sigma thm) ,
 	kind_of_term (Reductionops.whd_betaiotazeta sigma concl) with
 
@@ -166,11 +166,11 @@ let rec exact_modulo env sigma thm concl : Evd.evar_map * Constr.t =
 	 incr i
        done;
        if !i = n then
-	 fst (!sigma_return), mkLambda (Anonymous, thm, mkRel 1)
+	 fst (!sigma_return), proofthm
        else
 	 Errors.error ("Cannot unify the arguments in position " ^ string_of_int !i ^ ".") (* of f1 and f2 *)
      else (* there may be a transfer required *)
-       let (surj, proof) = try PMap.find (f1, f2) !transfers
+       let (surj, proofsurj) = try PMap.find (f1, f2) !transfers
 			   with Not_found ->
 			     (* if const recurse after one step of delta *)
 			     Errors.errorlabstrm "" (str "Cannot unify " ++ pr_lconstr f1 ++ str " and " ++ pr_lconstr f2 ++ str "(no adequate transfer declared).") in
@@ -191,10 +191,7 @@ let rec exact_modulo env sigma thm concl : Evd.evar_map * Constr.t =
        done;
        if !i = n then
 	 fst (!sigma_return),
-	 mkLambda(Anonymous, thm,
-		  mkApp (mkApp (proof,
-				Array.map (lift 1) l1) ,
-			 [| mkRel 1 |]))
+	 mkApp (mkApp (proofsurj, l1) , [| proofthm |])
        else
 	 Errors.errorlabstrm "" (str "Cannot unify " ++ pifb () ++ pr_lconstr_env env (fst (!sigma_return)) (mkApp (surj , [| l1.(!i - 1) |])) ++ str " and " ++ pr_lconstr_env env (fst (!sigma_return)) l2.(!i - 1) ++ str ".")
 
@@ -202,61 +199,54 @@ let rec exact_modulo env sigma thm concl : Evd.evar_map * Constr.t =
      let sigma', return = Reductionops.infer_conv env sigma t1 t3 in
      let env = Environ.push_rel (name, None, t3) env in
      if return then (* if t1 = t3 *)
-       let sigma, p_rec = exact_modulo env sigma' t2 t4 in
+       let sigma, p_rec = exact_modulo
+			    env sigma' t2 t4
+			    (mkApp (lift 1 proofthm, [| mkRel 1 |])) in
        sigma,
-       mkLambda (Anonymous, thm,
-		 mkLambda (name, t3,
-			   mkApp (p_rec,
-				  [| (mkApp (mkRel 2, [| mkRel 1 |])) |])))
+       mkLambda (name, t3, p_rec)
      else (* there may be a transfer required *)
-       let (surj, inv, proof) = try PMap.find (t1, t3) !surjections
+       let (surj, inv, prooftransf) = try PMap.find (t1, t3) !surjections
 				with Not_found -> Errors.error "Cannot unify (no adequate surjection declared)." (* t1 and t3 *) in
        (* for now, PMap.find is based on Constr.equal but if we decide to look
           in the table modulo unification, then we will have to get back a
           sigma *)
        let sigma, p_rec =
 	 exact_modulo env sigma		      
-		      (subst1 (mkApp (inv, [| mkRel 1 |])) t2)
+		      (subst1  (mkApp (inv, [| mkRel 1 |])) (liftn 1 2 t2))
 		      (* substitute all occurrences of x with (inv x) *)
 		      (subst1 (mkApp (surj, [| (mkApp (inv, [| mkRel 1 |])) |]))
-			      t4)
+			      (liftn 1 2 t4))
 		      (* substitute all occurrences of x with (surj (inv x)) *)
+		      (mkApp (lift 1 proofthm,
+				[| mkApp (inv,
+					  [| mkRel 1 |]) |]))
        in
        sigma,
-       let t3 = lift 1 t3 in
-       let t4 = liftn 1 2 t4 in
-       let p_rec = liftn 1 2 p_rec in
-       mkLambda (Anonymous, thm,
-		 mkLambda (name, t3,
-			   mkApp (
-			       (* eq_rect *)
-			       Universes.constr_of_global
-				 (Indrec.lookup_eliminator
-				    (fst
-				       (destInd
-					  (Universes.constr_of_global
-					     (build_coq_eq ()))))
-				    InType),
-				    
-			       [| t3 ;
-				  mkApp (surj,
-					 [| (mkApp (inv, [| mkRel 1 |])) |]) ;
-				  mkLambda (name, t3, t4) ;
-				  mkApp
-				    (p_rec,
-				     [| mkApp
-					  (mkRel 2,
-					   [| mkApp (inv,
-						     [| mkRel 1 |]) |]) |]) ;
-				  mkRel 1 ;
-				  mkApp (proof , [| mkRel 1 |]) |])))
+       mkLambda (name, t3,
+		 mkApp (
+		     (* eq_rect *)
+		     Universes.constr_of_global
+		       (Indrec.lookup_eliminator
+			  (fst
+			     (destInd
+				(Universes.constr_of_global
+				   (build_coq_eq ()))))
+			  InType),
+		     
+		     [| lift 1 t3 ;
+			mkApp (surj,
+			       [| (mkApp (inv, [| mkRel 1 |])) |]) ;
+			lift 1 (mkLambda (name, t3, t4)) ;
+			p_rec ;
+			mkRel 1 ;
+			mkApp (prooftransf , [| mkRel 1 |]) |]))
 
   | _ ->
      let sigma, return = Reductionops.infer_conv env sigma thm concl in
      if return then
-       sigma, mkLambda (Anonymous, thm, mkRel 1)
+       sigma, proofthm
      else
-       Errors.error "Cannot unify."
+       Errors.errorlabstrm "" (str "Cannot unify " ++ quote (pr_lconstr_env env Evd.empty thm) ++ str " and " ++ quote (pr_lconstr_env env Evd.empty concl) ++ str ".")
 
 let exact_modulo_tactic (_, proof) = (* Of what use is this evd _? *)
   Goal.nf_enter (* enter wouldn't work : Goal.concl goal wouldn't type check *)
@@ -265,8 +255,7 @@ let exact_modulo_tactic (_, proof) = (* Of what use is this evd _? *)
 	  let concl = Goal.concl goal in
 	  Refine.refine (fun sigma ->
 			 let thm = Retyping.get_type_of env sigma proof in
-			 let sigma, imply = exact_modulo env sigma thm concl in
-			 sigma, mkApp (imply, [| proof |])
+			 exact_modulo env sigma thm concl proof
 			)
     end
     
