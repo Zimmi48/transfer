@@ -199,7 +199,6 @@ let rec exact_modulo env sigma thm concl : Evd.evar_map * Constr.t =
 	 Errors.errorlabstrm "" (str "Cannot unify " ++ pifb () ++ pr_lconstr_env env (fst (!sigma_return)) (mkApp (surj , [| l1.(!i - 1) |])) ++ str " and " ++ pr_lconstr_env env (fst (!sigma_return)) l2.(!i - 1) ++ str ".")
 
   | Prod (_, t1, t2) , Prod (name, t3, t4) ->
-     let env = Environ.push_rel (Anonymous, None, thm) env in
      let sigma', return = Reductionops.infer_conv env sigma t1 t3 in
      let env = Environ.push_rel (name, None, t3) env in
      if return then (* if t1 = t3 *)
@@ -224,6 +223,9 @@ let rec exact_modulo env sigma thm concl : Evd.evar_map * Constr.t =
 		      (* substitute all occurrences of x with (surj (inv x)) *)
        in
        sigma,
+       let t3 = lift 1 t3 in
+       let t4 = liftn 1 2 t4 in
+       let p_rec = liftn 1 2 p_rec in
        mkLambda (Anonymous, thm,
 		 mkLambda (name, t3,
 			   mkApp (
