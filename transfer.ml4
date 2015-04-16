@@ -239,15 +239,15 @@ let rec exact_modulo env sigma thm concl : Evd.evar_map * Constr.t =
 			       [| t3 ;
 				  mkApp (surj,
 					 [| (mkApp (inv, [| mkRel 1 |])) |]) ;
-				     mkLambda (name, t3, t4) ;
-				     mkApp
-				       (p_rec,
-					[| mkApp
-					     (mkRel 2,
-					      [| mkApp (inv,
-							[| mkRel 1 |]) |]) |]) ;
-				     mkRel 1 ;
-				     mkApp (proof , [| mkRel 1 |]) |])))
+				  mkLambda (name, t3, t4) ;
+				  mkApp
+				    (p_rec,
+				     [| mkApp
+					  (mkRel 2,
+					   [| mkApp (inv,
+						     [| mkRel 1 |]) |]) |]) ;
+				  mkRel 1 ;
+				  mkApp (proof , [| mkRel 1 |]) |])))
 
   | _ ->
      let sigma, return = Reductionops.infer_conv env sigma thm concl in
