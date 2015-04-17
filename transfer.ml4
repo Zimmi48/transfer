@@ -144,7 +144,7 @@ let add_transfer f r r' proof =
   transfers := PMap.add key (f_fun, proofterm) !transfers
 
 let pending_subst
-      (term : Constr.t) (subst : (Constr.t -> Constr.t) option list)
+      (subst : (Constr.t -> Constr.t) option list) (term : Constr.t)
     : Constr.t =
   snd (List.fold_left
 	 (* the head of the list corresponds to the de Bruijn index 1 *)
@@ -175,11 +175,7 @@ let rec exact_modulo env sigma thm concl subst proofthm
      if n <> m then
        Errors.error (* f1 and f2 have *) "Not the same number of arguments.";
      (* apply all pending substitutions *)
-     (* warning: we use the mutable capacity of argument array l2 *)
-     for i = 0 to n - 1 do
-       l2.(i) <- pending_subst l2.(i) subst
-     done;
-     
+     let l2 = Array.map (pending_subst subst) l2 in
      (* try exact match first *)
      let sigma', return = Reductionops.infer_conv env sigma f1 f2 in
      if return then
