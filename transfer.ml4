@@ -145,19 +145,39 @@ let add_transfer f r r' proof =
 
 (* given types thm and concl, exact_modulo tries to automatically prove
    thm -> concl by using transfer and surjection lemmas previously declared *)
-let rec exact_modulo env sigma thm concl proofthm : Evd.evar_map * Constr.t =
+(* subst is a list of pending substitutions to do or not inside "concl".
+   Only the position in the list gives which rel to substitue. Thus, if there
+   is no substitution for some rel, the list contains a "None" entry. *)
+let rec exact_modulo env sigma thm concl subst proofthm
+	: Evd.evar_map * Constr.t =
   match kind_of_term (Reductionops.whd_betaiotazeta sigma thm) ,
 	kind_of_term (Reductionops.whd_betaiotazeta sigma concl) with
 
   | App (f1 , l1) , App (f2 , l2) ->
+     let n = Array.length l1 in
+     let m = Array.length l2 in
+     if n <> m then
+       Errors.error (* f1 and f2 have *) "Not the same number of arguments.";
+     (* apply all pending substitutions *)
+     (* warning: we use the mutable capacity of argument array l2 *)
+     for i = 0 to n - 1 do
+       List.iteri
+	 (* the head of the list corresponds to the de Bruijn index 1 *)
+	 begin fun j t -> match t with
+			  | None -> ()
+			  | Some t ->
+			     l2.(i) <- substnl [t (mkRel (j+1))] j
+					       (liftn 1 (j+2) l2.(i))
+					       (* is this lifting correct? *)
+	 end
+	 subst
+     done;
+     
      (* try exact match first *)
      let sigma', return = Reductionops.infer_conv env sigma f1 f2 in
      if return then
        (* When we start accepting functions and not just relations,
           we should recurse in the arguments. *)
-       let n = Array.length l1 in
-       let m = Array.length l2 in
-       if n <> m then Errors.error (* f1 and f2 have *) "Not the same number of arguments.";
        let i = ref 0 in
        let sigma_return = ref (sigma', true) in
        while snd (!sigma_return) && !i < n do
@@ -177,9 +197,6 @@ let rec exact_modulo env sigma thm concl proofthm : Evd.evar_map * Constr.t =
        (* for now, PMap.find is based on Constr.equal but if we decide to look
           in the table modulo unification, then we will have to get back a
           sigma *)
-       let n = Array.length l1 in
-       let m = Array.length l2 in
-       if n <> m then Errors.error (* f1 and f2 have *) "Not the same number of arguments.";
        let i = ref 0 in
        let sigma_return = ref (sigma, true) in
        while snd (!sigma_return) && !i < n do
@@ -200,7 +217,7 @@ let rec exact_modulo env sigma thm concl proofthm : Evd.evar_map * Constr.t =
      let env = Environ.push_rel (name, None, t3) env in
      if return then (* if t1 = t3 *)
        let sigma, p_rec = exact_modulo
-			    env sigma' t2 t4
+			    env sigma' t2 t4 (None :: subst)
 			    (mkApp (lift 1 proofthm, [| mkRel 1 |])) in
        sigma,
        mkLambda (name, t3, p_rec)
@@ -211,12 +228,14 @@ let rec exact_modulo env sigma thm concl proofthm : Evd.evar_map * Constr.t =
           in the table modulo unification, then we will have to get back a
           sigma *)
        let sigma, p_rec =
-	 exact_modulo env sigma		      
-		      (subst1  (mkApp (inv, [| mkRel 1 |])) (liftn 1 2 t2))
+	 exact_modulo env sigma
+		      (subst1 (mkApp (inv, [| mkRel 1 |])) (liftn 1 2 t2))
 		      (* substitute all occurrences of x with (inv x) *)
-		      (subst1 (mkApp (surj, [| (mkApp (inv, [| mkRel 1 |])) |]))
-			      (liftn 1 2 t4))
-		      (* substitute all occurrences of x with (surj (inv x)) *)
+		      t4
+		      (Some (fun x -> mkApp (surj,
+					     [| (mkApp (inv, [| x |])) |]))
+		       :: subst)
+		      (* substitute some occurrences of x with (surj (inv x)) *)
 		      (mkApp (lift 1 proofthm,
 				[| mkApp (inv,
 					  [| mkRel 1 |]) |]))
@@ -236,6 +255,9 @@ let rec exact_modulo env sigma thm concl proofthm : Evd.evar_map * Constr.t =
 		     [| lift 1 t3 ;
 			mkApp (surj,
 			       [| (mkApp (inv, [| mkRel 1 |])) |]) ;
+			(* maybe we create a problem here because there
+                           was no pending substitution done for the t4
+                           appearing here... *)
 			lift 1 (mkLambda (name, t3, t4)) ;
 			p_rec ;
 			mkRel 1 ;
@@ -255,7 +277,7 @@ let exact_modulo_tactic (_, proof) = (* Of what use is this evd _? *)
 	  let concl = Goal.concl goal in
 	  Refine.refine (fun sigma ->
 			 let thm = Retyping.get_type_of env sigma proof in
-			 exact_modulo env sigma thm concl proof
+			 exact_modulo env sigma thm concl [] proof
 			)
     end
     
