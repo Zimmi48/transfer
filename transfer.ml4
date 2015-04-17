@@ -143,6 +143,22 @@ let add_transfer f r r' proof =
   let key = (r_rel, r'_rel) in
   transfers := PMap.add key (f_fun, proofterm) !transfers
 
+let pending_subst
+      (term : Constr.t) (subst : (Constr.t -> Constr.t) option list)
+    : Constr.t =
+  snd (List.fold_left
+	 (* the head of the list corresponds to the de Bruijn index 1 *)
+	 begin fun (j , t) substt ->
+	       match substt with
+	       | None -> j + 1, t
+	       | Some substt ->
+		  j + 1,
+		  substnl [substt (mkRel (j+1))] j
+			  (liftn 1 (j+2) t)
+			  (* is this lifting correct? *)
+	 end
+	 (0, term) subst)
+		       
 (* given types thm and concl, exact_modulo tries to automatically prove
    thm -> concl by using transfer and surjection lemmas previously declared *)
 (* subst is a list of pending substitutions to do or not inside "concl".
@@ -161,16 +177,7 @@ let rec exact_modulo env sigma thm concl subst proofthm
      (* apply all pending substitutions *)
      (* warning: we use the mutable capacity of argument array l2 *)
      for i = 0 to n - 1 do
-       List.iteri
-	 (* the head of the list corresponds to the de Bruijn index 1 *)
-	 begin fun j t -> match t with
-			  | None -> ()
-			  | Some t ->
-			     l2.(i) <- substnl [t (mkRel (j+1))] j
-					       (liftn 1 (j+2) l2.(i))
-					       (* is this lifting correct? *)
-	 end
-	 subst
+       l2.(i) <- pending_subst l2.(i) subst
      done;
      
      (* try exact match first *)
