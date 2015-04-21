@@ -146,18 +146,15 @@ let add_transfer f r r' proof =
 let pending_subst
       (subst : (Constr.t -> Constr.t) option list) (term : Constr.t)
     : Constr.t =
-  snd (List.fold_left
-	 (* the head of the list corresponds to the de Bruijn index 1 *)
-	 begin fun (j , t) substt ->
-	       match substt with
-	       | None -> j + 1, t
-	       | Some substt ->
-		  j + 1,
-		  substnl [substt (mkRel (j+1))] j
-			  (liftn 1 (j+2) t)
-			  (* is this lifting correct? *)
-	 end
-	 (0, term) subst)
+  let subst = List.mapi
+		begin fun i subst ->
+		      match subst with
+		      | None -> mkRel (i + 1)
+		      | Some f -> f (mkRel (i + 1))
+		end
+		subst in
+  let n = List.length subst in
+  substl subst (liftn n n term)
 		       
 (* given types thm and concl, exact_modulo tries to automatically prove
    thm -> concl by using transfer and surjection lemmas previously declared *)
