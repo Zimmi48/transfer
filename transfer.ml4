@@ -13,6 +13,9 @@ open Constrexpr
 open Globnames
 open Printer
 open Pp
+open Mod_subst
+open Libobject
+open Lib
        
 module PairConstr =
   struct
@@ -32,6 +35,66 @@ let emptyt : (constr * constr) PMap.t = PMap.empty
 
 let surjections = ref emptys
 let transfers = ref emptyt
+
+let freeze _ = (!surjections, !transfers)
+		  
+let unfreeze (surj, transf) =
+  surjections := surj;
+  transfers := transf
+		 
+let init () =
+  surjections := emptys;
+  transfers := emptyt
+		    
+let _ =
+  Summary.declare_summary "transfer"
+    { Summary.freeze_function = freeze;
+      Summary.unfreeze_function = unfreeze;
+      Summary.init_function = init }
+
+let load_surjection _ _ = ()
+let open_surjection i (_, (k, c)) =
+  if i = 1 then
+    surjections := PMap.add k c !surjections
+let cache_surjection o =
+  load_surjection 1 o;
+  open_surjection 1 o
+let subst_surjection (subst , ((k1, k2), (c1, c2, c3))) =
+  ((subst_mps subst k1, subst_mps subst k2),
+   (subst_mps subst c1, subst_mps subst c2, subst_mps subst c3))
+let classify_surjection x = Substitute x
+let discharge_surjection _ = None (* TODO *)
+      
+let inSurjection : PMap.key * (constr * constr * constr) -> obj =
+  declare_object {(default_object "SURJECTION") with
+    open_function = open_surjection;
+    load_function = load_surjection;
+    cache_function = cache_surjection;
+    subst_function = subst_surjection;
+    classify_function = classify_surjection;
+    discharge_function = discharge_surjection }
+    
+let load_transfer _ _ = ()
+let open_transfer i (_, (k, c)) =
+  if i = 1 then
+    transfers := PMap.add k c !transfers
+let cache_transfer o =
+  load_transfer 1 o;
+  open_transfer 1 o
+let subst_transfer (subst , ((k1, k2), (c1, c2))) =
+  ((subst_mps subst k1, subst_mps subst k2),
+   (subst_mps subst c1, subst_mps subst c2))
+let classify_transfer x = Substitute x
+let discharge_transfer _ = None (* TODO *)
+      
+let inTransfer : PMap.key * (constr * constr) -> obj =
+  declare_object {(default_object "TRANSFER") with
+    open_function = open_transfer;
+    load_function = load_transfer;
+    cache_function = cache_transfer;
+    subst_function = subst_transfer;
+    classify_function = classify_transfer;
+    discharge_function = discharge_transfer }
 
 let constr_and_type_of_ref r =
   let t = Constrintern.intern_reference r in
@@ -80,9 +143,7 @@ let add_surjection f g proof =
        t1 , t2
     | _ -> Errors.error "Some arguments have a wrong type."
   in
-  surjections := PMap.add key
-                          (f_fun, g_fun, proofterm)
-                          !surjections
+  add_anonymous_leaf (inSurjection (key, (f_fun, g_fun, proofterm)))
 			  
 let add_transfer f r r' proof =
   let env = Global.env () in
@@ -141,7 +202,7 @@ let add_transfer f r r' proof =
     | _ -> Errors.errorlabstrm "" (pr_lconstr f_fun ++ str " has not a function type.")
   in
   let key = (r_rel, r'_rel) in
-  transfers := PMap.add key (f_fun, proofterm) !transfers
+  add_anonymous_leaf (inTransfer (key, (f_fun, proofterm)))
 
 let pending_subst
       (subst : (Constr.t -> Constr.t) option list) (term : Constr.t)
@@ -154,7 +215,7 @@ let pending_subst
 		end
 		subst in
   let n = List.length subst in
-  substl subst (liftn n n term)
+  substl subst (liftn n (n + 1) term)
 		       
 (* given types thm and concl, exact_modulo tries to automatically prove
    thm -> concl by using transfer and surjection lemmas previously declared *)
@@ -193,7 +254,7 @@ let rec exact_modulo env sigma thm concl subst proofthm
        let (surj, proofsurj) = try PMap.find (f1, f2) !transfers
 			   with Not_found ->
 			     (* if const recurse after one step of delta *)
-			     Errors.errorlabstrm "" (str "Cannot unify " ++ pr_lconstr f1 ++ str " and " ++ pr_lconstr f2 ++ str "(no adequate transfer declared).") in
+			     Errors.errorlabstrm "" (str "Cannot unify " ++ pr_lconstr f1 ++ str " and " ++ pr_lconstr f2 ++ str " (no adequate transfer declared).") in
        (* for now, PMap.find is based on Constr.equal but if we decide to look
           in the table modulo unification, then we will have to get back a
           sigma *)
