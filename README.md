@@ -58,17 +58,25 @@ given a proof ``proofthm`` of a theorem ``thm``.
 To do so, it matches the forms of ``goal`` and ``thm``. So far there are
 three main cases:
 
-- ``goal`` has the form ``∀ x : A, B`` and ``thm`` has the form
-``∀ x : A, B'``. Then we recurse to find a proof ``p_rec[P_b]``
+- ``thm`` has the form ``∀ x : A, B[x]`` and ``goal`` has the form
+``∀ x : A, B'[x]``. Then we recurse to find a proof ``p_rec[P_b]``
+of ``B'[x]``
 and we return the proofterm ``λ x : A, p_rec[proofthm x]``.
-- ``goal`` has the form ``∀ x : A', B`` and ``thm`` has the form
-``∀ x' : A', B'``. Then we recurse to find a proof ``p_rec[P_b]``
-and we return the proofterm ``λ x : A, p_rec[proofthm x]``.
+- ``thm`` has the form ``∀ x : A', B[x]`` and ``goal`` has the form
+``∀ x' : A', B'[x]``. Then we find the surjection ``(f, g, proofsurj)``
+associated to ``(A, A')``. If it does not exist, we fail.
+If it exists, we recurse to find a proof ``p_rec[P_b]``
+of ``B'[f (g x)]``
+and we return the proofterm
+``λ x : A, eq_rect (f (g x)) B' p_rec[proofthm (g x)] x proofsurj``.
+- ``thm`` has the form ``R x1 ... xn`` and ``goal`` has the form
+``R' x1 ... xn``. Then we find the transfer ``(f, prooftransf)``
+associated to ``(R, R')``. If it does not exist, we fail.
+If it exists, we return the proofterm ``prooftransf x1 ... xn proofthm``.
 
 In all the other cases, the algorithm tries to unify ``goal`` and ``thm``
 and returns ``proofthm`` in case of success and an error otherwise.
 
 ##TODO
 
-- Handle backtracking by declaring the appropriate summary and objects.
 - Handle transfer in hypotheses
