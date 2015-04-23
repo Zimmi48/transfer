@@ -232,8 +232,9 @@ let pending_subst
    The substitution will be done only if covariant has the same value. *)
 let rec exact_modulo env sigma thm concl subst covariant proofthm
 	: Evd.evar_map * Constr.t =
-  match kind_of_term (Reductionops.whd_betaiotazeta sigma thm) ,
-	kind_of_term (Reductionops.whd_betaiotazeta sigma concl) with
+  let thm = Reductionops.whd_betaiotazeta sigma thm in
+  let concl = Reductionops.whd_betaiotazeta sigma concl in
+  match kind_of_term thm, kind_of_term concl with
 
   | App (f1 , l1) , App (f2 , l2) ->
      let n = Array.length l1 in
@@ -257,7 +258,7 @@ let rec exact_modulo env sigma thm concl subst covariant proofthm
        if !i = n then
 	 fst (!sigma_return), proofthm
        else
-	 Errors.error ("Cannot unify the arguments in position " ^ string_of_int !i ^ ".") (* of f1 and f2 *)
+	 Errors.errorlabstrm "" (str "Cannot unify " ++ quote (pr_lconstr_env env (fst (!sigma_return)) l1.(!i - 1)) ++ str " and " ++ quote (pr_lconstr_env env (fst (!sigma_return)) l2.(!i - 1)) ++ str ".")
      else (* there may be a transfer required *)
        let (surj, proofsurj) = try PMap.find (f1, f2) !transfers
 			   with Not_found ->
