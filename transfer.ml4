@@ -16,6 +16,8 @@ open Pp
 open Mod_subst
 open Libobject
 open Lib
+
+type ('a, 'b) either = Left of 'a | Right of 'b
        
 module PairConstr =
   struct
@@ -277,22 +279,24 @@ let rec exact_modulo env sigma thm concl subst proofthm
      let sigma, unifproof =
        try
 	 let sigma, unifproof = exact_modulo env sigma t3 t1 subst (mkRel 1) in
-	 sigma, Some unifproof
-       with Errors.UserError _ ->
+	 sigma, Left unifproof
+       with Errors.UserError (e, e') ->
 	 (* at that point we may want to save that error message *)
-	 sigma, None
+	 sigma, Right (e, e')
      in
      let env = Environ.push_rel (name, None, t3) env in
      begin match unifproof with
-	   | Some unifproof -> (* if t1 = t3 *)
+	   | Left unifproof -> (* if t1 = t3 *)
 	      let sigma, p_rec = exact_modulo
 				   env sigma t2 t4 (None :: subst)
 				   (mkApp (lift 1 proofthm, [| unifproof |])) in
 	      sigma,
 	      mkLambda (name, t3, p_rec)
-	   | None -> (* there may be a transfer required *)
+	   | Right (e, e') -> (* there may be a transfer required *)
 	      let (surj, inv, prooftransf) = try PMap.find (t1, t3) !surjections
-					     with Not_found -> Errors.error "Cannot unify (no adequate surjection declared)." (* t1 and t3 *) in
+					     with Not_found ->
+					       raise (Errors.UserError (e, e'))
+	      in
 	      (* for now, PMap.find is based on Constr.equal but if we decide
                  to look in the table modulo unification, then we will have to
                  get back a sigma *)
