@@ -276,7 +276,7 @@ let rec exact_modulo env sigma thm concl subst proofthm
   | Prod (_, t1, t2) , Prod (name, t3, t4) ->
      let sigma, unifproof =
        let sigma', return = Reductionops.infer_conv env sigma t1 t3 in
-       if return then sigma', Some true
+       if return then sigma', Some (mkRel 1)
        else sigma, None
      in
      let env = Environ.push_rel (name, None, t3) env in
@@ -284,7 +284,7 @@ let rec exact_modulo env sigma thm concl subst proofthm
 	   | Some unifproof -> (* if t1 = t3 *)
 	      let sigma, p_rec = exact_modulo
 				   env sigma t2 t4 (None :: subst)
-				   (mkApp (lift 1 proofthm, [| mkRel 1 |])) in
+				   (mkApp (lift 1 proofthm, [| unifproof |])) in
 	      sigma,
 	      mkLambda (name, t3, p_rec)
 	   | None -> (* there may be a transfer required *)
