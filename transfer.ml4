@@ -275,9 +275,12 @@ let rec exact_modulo env sigma thm concl subst proofthm
 
   | Prod (_, t1, t2) , Prod (name, t3, t4) ->
      let sigma, unifproof =
-       let sigma', return = Reductionops.infer_conv env sigma t1 t3 in
-       if return then sigma', Some (mkRel 1)
-       else sigma, None
+       try
+	 let sigma, unifproof = exact_modulo env sigma t3 t1 subst (mkRel 1) in
+	 sigma, Some unifproof
+       with Errors.UserError _ ->
+	 (* at that point we may want to save that error message *)
+	 sigma, None
      in
      let env = Environ.push_rel (name, None, t3) env in
      begin match unifproof with
