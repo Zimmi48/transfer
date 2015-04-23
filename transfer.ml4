@@ -207,13 +207,16 @@ let add_transfer f r r' proof =
   add_anonymous_leaf (inTransfer (key, (f_fun, proofterm)))
 
 let pending_subst
-      (subst : (Constr.t -> Constr.t) option list) (term : Constr.t)
+      (subst : ((Constr.t -> Constr.t) * bool) option list)
+      (covariant : bool)
+      (term : Constr.t)
     : Constr.t =
   let subst = List.mapi
 		begin fun i subst ->
 		      match subst with
-		      | None -> mkRel (i + 1)
-		      | Some f -> f (mkRel (i + 1))
+		      | Some (f, bool) when bool = covariant ->
+			 f (mkRel (i + 1))
+		      | _ -> mkRel (i + 1)
 		end
 		subst in
   let n = List.length subst in
@@ -224,7 +227,10 @@ let pending_subst
 (* subst is a list of pending substitutions to do or not inside "concl".
    Only the position in the list gives which rel to substitue. Thus, if there
    is no substitution for some rel, the list contains a "None" entry. *)
-let rec exact_modulo env sigma thm concl subst proofthm
+(* "Some" entries are couples of a substitution function and a boolean
+   which is the value of covariant at the time the substitution was recorded.
+   The substitution will be done only if covariant has the same value. *)
+let rec exact_modulo env sigma thm concl subst covariant proofthm
 	: Evd.evar_map * Constr.t =
   match kind_of_term (Reductionops.whd_betaiotazeta sigma thm) ,
 	kind_of_term (Reductionops.whd_betaiotazeta sigma concl) with
@@ -235,7 +241,7 @@ let rec exact_modulo env sigma thm concl subst proofthm
      if n <> m then
        Errors.error (* f1 and f2 have *) "Not the same number of arguments.";
      (* apply all pending substitutions *)
-     let l2 = Array.map (pending_subst subst) l2 in
+     let l2 = Array.map (pending_subst subst covariant) l2 in
      (* try exact match first *)
      let sigma', return = Reductionops.infer_conv env sigma f1 f2 in
      if return then
@@ -278,7 +284,8 @@ let rec exact_modulo env sigma thm concl subst proofthm
   | Prod (_, t1, t2) , Prod (name, t3, t4) ->
      let sigma, unifproof =
        try
-	 let sigma, unifproof = exact_modulo env sigma t3 t1 subst (mkRel 1) in
+	 let sigma, unifproof =
+	   exact_modulo env sigma t3 t1 subst (not covariant) (mkRel 1) in
 	 sigma, Left unifproof
        with Errors.UserError (e, e') ->
 	 (* at that point we may want to save that error message *)
@@ -288,7 +295,7 @@ let rec exact_modulo env sigma thm concl subst proofthm
      begin match unifproof with
 	   | Left unifproof -> (* if t1 = t3 *)
 	      let sigma, p_rec = exact_modulo
-				   env sigma t2 t4 (None :: subst)
+				   env sigma t2 t4 (None :: subst) covariant
 				   (mkApp (lift 1 proofthm, [| unifproof |])) in
 	      sigma,
 	      mkLambda (name, t3, p_rec)
@@ -306,8 +313,10 @@ let rec exact_modulo env sigma thm concl subst proofthm
 		  (subst1 (mkApp (inv, [| mkRel 1 |])) (liftn 1 2 t2))
 		  (* substitute all occurrences of x with (inv x) *)
 		  t4
-		  (Some (fun x -> mkApp (surj, [| (mkApp (inv, [| x |])) |]))
+		  (Some ((fun x -> mkApp (surj, [| (mkApp (inv, [| x |])) |])),
+			 covariant)
 		   :: subst)
+		  covariant
 		  (* substitute some occurrences of x with (surj (inv x)) *)
 		  (mkApp (lift 1 proofthm, [| mkApp (inv, [| mkRel 1 |]) |]))
 	      in
@@ -330,8 +339,8 @@ let rec exact_modulo env sigma thm concl subst proofthm
 					 (name, t3,
 					  (* apply pending_subst but we need to
                                              shift subst first *)
-					  pending_subst
-					    (None :: subst) t4)) ;
+					  pending_subst (None :: subst)
+							covariant t4)) ;
 			       p_rec ;
 			       mkRel 1 ;
 			       mkApp (prooftransf , [| mkRel 1 |]) |]))
@@ -350,7 +359,7 @@ let exact_modulo_tactic (_, proof) = (* Of what use is this evd _? *)
 	  let concl = Goal.concl goal in
 	  Refine.refine (fun sigma ->
 			 let thm = Retyping.get_type_of env sigma proof in
-			 exact_modulo env sigma thm concl [] proof
+			 exact_modulo env sigma thm concl [] true proof
 			)
     end
     
