@@ -316,10 +316,11 @@ let rec exact_modulo env sigma thm concl subst proofthm
 		     [| lift 1 t3 ;
 			mkApp (surj,
 			       [| (mkApp (inv, [| mkRel 1 |])) |]) ;
-			(* maybe we create a problem here because there
-                           was no pending substitution done for the t4
-                           appearing here... *)
-			lift 1 (mkLambda (name, t3, t4)) ;
+			lift 1 (mkLambda (name, t3,
+					  (* apply pending_subst but we need to
+                                             shift subst first *)
+					  pending_subst
+					    (None :: subst) t4)) ;
 			p_rec ;
 			mkRel 1 ;
 			mkApp (prooftransf , [| mkRel 1 |]) |]))
