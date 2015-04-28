@@ -206,6 +206,16 @@ let add_transfer f r r' proof =
   let key = (r_rel, r'_rel) in
   add_anonymous_leaf (inTransfer (key, (f_fun, proofterm)))
 
+let rec splitReln covariant n t = match kind_of_term t with
+  | Rel k when k < n -> mkRel k
+  | Rel k when covariant && n = k -> mkRel n
+  | Rel k -> mkRel (k + 1)
+  | Prod(name, t1, t2) ->
+     mkProd(name,
+	    splitReln (not covariant) n t1,
+	    splitReln covariant (n + 1) t2)
+  | _ -> Constr.map_with_binders succ (splitReln covariant) n t
+    
 (* given types thm and concl, exact_modulo tries to automatically prove
    thm -> concl by using transfer and surjection lemmas previously declared *)
 let rec exact_modulo env sigma thm concl proofthm
@@ -290,7 +300,7 @@ let rec exact_modulo env sigma thm concl proofthm
 		  (subst1 (mkApp (inv, [| mkRel 1 |])) (liftn 1 2 t2))
 		  (* substitute all occurrences of x with (inv x) *)
 		  (subst1 (mkApp (surj, [| (mkApp (inv, [| mkRel 1 |])) |]))
-			 (liftn 1 2 t4))
+			 (splitReln true 1 t4))
 		  (* substitute some occurrences of x with (surj (inv x)) *)
 		  (mkApp (lift 1 proofthm, [| mkApp (inv, [| mkRel 1 |]) |]))
 	      in
@@ -309,8 +319,8 @@ let rec exact_modulo env sigma thm concl proofthm
 			    [| lift 1 t3 ;
 			       mkApp (surj,
 				      [| (mkApp (inv, [| mkRel 1 |])) |]) ;
-			       lift 1 (mkLambda
-					 (name, t3, t4)) ;
+			       (mkLambda (* why this lift? *)
+				  (name, lift 1 t3, splitReln true 1 t4)) ;
 			       p_rec ;
 			       mkRel 1 ;
 			       mkApp (prooftransf , [| mkRel 1 |]) |]))
