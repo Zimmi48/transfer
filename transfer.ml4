@@ -246,7 +246,7 @@ let rec exact_modulo env sigma thm concl proofthm
        else
 	 Errors.errorlabstrm "" (str "Cannot unify " ++ quote (pr_lconstr_env env (fst (!sigma_return)) l1.(!i - 1)) ++ str " and " ++ quote (pr_lconstr_env env (fst (!sigma_return)) l2.(!i - 1)) ++ str ".")
      else (* there may be a transfer required *)
-       let (surj, proofsurj) = try PMap.find (f1, f2) !transfers
+       let (surj, prooftransf) = try PMap.find (f1, f2) !transfers
 			   with Not_found ->
 			     (* if const recurse after one step of delta *)
 			     Errors.errorlabstrm "" (str "Cannot unify " ++ pr_lconstr f1 ++ str " and " ++ pr_lconstr f2 ++ str " (no adequate transfer declared).") in
@@ -264,21 +264,21 @@ let rec exact_modulo env sigma thm concl proofthm
        done;
        if !i = n then
 	 fst (!sigma_return),
-	 mkApp (mkApp (proofsurj, l1) , [| proofthm |])
+	 mkApp (mkApp (prooftransf, l1) , [| proofthm |])
        else
 	 Errors.errorlabstrm "" (str "Cannot unify " ++ pifb () ++ pr_lconstr_env env (fst (!sigma_return)) (mkApp (surj , [| l1.(!i - 1) |])) ++ str " and " ++ pr_lconstr_env env (fst (!sigma_return)) l2.(!i - 1) ++ str ".")
 
   | Prod (_, t1, t2) , Prod (name, t3, t4) ->
+     let env = Environ.push_rel (name, None, t3) env in
      let sigma, unifproof =
        try
 	 let sigma, unifproof =
-	   exact_modulo env sigma t3 t1 (mkRel 1) in
+	   exact_modulo env sigma (lift 1 t3) (lift 1 t1) (mkRel 1) in
 	 sigma, Left unifproof
        with Errors.UserError (e, e') ->
 	 (* at that point we may want to save that error message *)
 	 sigma, Right (e, e')
      in
-     let env = Environ.push_rel (name, None, t3) env in
      begin match unifproof with
 	   | Left unifproof -> (* if t1 = t3 *)
 	      let sigma, p_rec = exact_modulo
@@ -287,7 +287,7 @@ let rec exact_modulo env sigma thm concl proofthm
 	      sigma,
 	      mkLambda (name, t3, p_rec)
 	   | Right (e, e') -> (* there may be a transfer required *)
-	      let (surj, inv, prooftransf) = try PMap.find (t1, t3) !surjections
+	      let (surj, inv, proofsurj) = try PMap.find (t1, t3) !surjections
 					     with Not_found ->
 					       raise (Errors.UserError (e, e'))
 	      in
@@ -323,7 +323,7 @@ let rec exact_modulo env sigma thm concl proofthm
 				  (name, lift 1 t3, splitReln true 1 t4)) ;
 			       p_rec ;
 			       mkRel 1 ;
-			       mkApp (prooftransf , [| mkRel 1 |]) |]))
+			       mkApp (proofsurj , [| mkRel 1 |]) |]))
      end
   | _ ->
      let sigma, return = Reductionops.infer_conv env sigma thm concl in
