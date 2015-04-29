@@ -16,7 +16,7 @@ $ coqide -I .
 Start your Coq file with the following:
 
 ````
-Declare ML Module "t".
+Declare ML Module "transfer".
 ````
 
 In principle, exact modulo is at least as powerful as the *exact* tactic.
@@ -77,6 +77,3 @@ If it exists, we return the proofterm ``prooftransf x1 ... xn proofthm``.
 In all the other cases, the algorithm tries to unify ``goal`` and ``thm``
 and returns ``proofthm`` in case of success and an error otherwise.
 
-##TODO
-
-- Handle transfer in hypotheses
