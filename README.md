@@ -54,5 +54,19 @@ adds the following row to the surjection table.
 Types of identifiers in a declaration are checked at the declaration time.
 
 The main algorithm constructs a proof of ``goal`` in a given context,
-given a proof ``proofthm`` of a theorem ``thm``. It is described in a
-working paper that is available upon request.
+given a proof ``proofthm`` of a theorem ``thm``. It is described in the
+following paper:
+
+* Zimmermann T. and Herbelin H.
+Automatic and Transparent Transfer of Theorems along Isomorphisms in the Coq Proof Assistant.
+To be presented at CICM 2015 (work-in-progress track).
+Read it on [SJS](http://www.sjscience.org/article?id=254),
+on [HAL](https://hal.archives-ouvertes.fr/hal-01152588)
+or on the [arXiv](http://arxiv.org/abs/1505.05028).
+
+##Example
+
+A simple example is included in the "transfer_Z.v" file.
+It highlights that this plugin is able to transfer theorems even between non-isomorphic types,
+given that the required declarations are made.
+
