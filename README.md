@@ -1,6 +1,6 @@
 #Plugin *transfer* for Coq (v8.5)
 
-Introduces a way to declare surjective morphisms betweem datatypes and
+Introduces a way to declare surjective morphisms between datatypes and
 a related tactic called *exact modulo*.
 Given a theorem, exact modulo will try to automatically build a proof
 that it implies the current goal.
@@ -37,10 +37,10 @@ tactic.
 
 ##Internals
 
-Surjections and transfer lemmas are stored in two tables: the former
-is a mapping from pairs of types to the surjection, its right-inverse
-and the proof of the lemma; the latter is a mapping from pairs of
-relations to the transfer function and the proof of the lemma.
+Surjections and transfer lemmas are stored in two tables: one
+is a mapping from pairs of types to a surjection, its right-inverse
+and a proof of the surjection lemma; the other is a mapping from pairs of
+relations to a transfer function and a proof of the transfer lemma.
 
 Example: ``Declare Surjection N.of_nat by (N.to_nat, N2Nat.id).``
 adds the following row to the surjection table.
@@ -58,7 +58,7 @@ given a proof ``proofthm`` of a theorem ``thm``. It is described in the
 following paper:
 
 * Zimmermann T. and Herbelin H.
-Automatic and Transparent Transfer of Theorems along Isomorphisms in the Coq Proof Assistant.
+*Automatic and Transparent Transfer of Theorems along Isomorphisms in the Coq Proof Assistant.*
 To be presented at CICM 2015 (work-in-progress track).
 Read it on [SJS](http://www.sjscience.org/article?id=254),
 on [HAL](https://hal.archives-ouvertes.fr/hal-01152588)
