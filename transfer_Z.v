@@ -45,3 +45,15 @@ Theorem lt_le_incl_transf :
 Proof.
   exact modulo Z.lt_le_incl.
 Qed.
+
+(* A theorem that cannot be transferred *)
+Theorem ex_pred : forall x, (forall y, (y < x)%Z -> False) -> False.
+Proof.
+  intros x H.
+  apply (H (Z.pred x)).
+  apply Z.lt_pred_l.
+Qed.
+
+Theorem ex_pred_transf : forall x, (forall y, y < x -> False) -> False.
+(* exact modulo ex_pred won't work *)
+Abort.
