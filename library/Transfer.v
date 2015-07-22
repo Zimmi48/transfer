@@ -5,7 +5,7 @@
  * http://mozilla.org/MPL/2.0/.
  *)
 
-Require Import Program.Basics.
+Require Export Program.Basics.
 
 Definition respectful_arrow
   {A B C D: Type}
@@ -27,7 +27,7 @@ Theorem modulo `{class : Related _ _ impl t u} : t -> u.
   intro.
   assert (prf := prf).
   unfold impl in prf.
-  exact (prf H).
+  tauto.
 Qed.
 
 Check modulo.
@@ -53,7 +53,7 @@ Instance lambda
   Related (R ##> R') (fun x : A => t x) (fun x' : B => t' x') :=
   { prf := fun (x : A) (x' : B) (H : R x x') => @prf _ _ _ _ _ (inst x x' H) }.
 
-(*Hint Extern 0 (Related _ _ _) => progress intros : typeclass_instances.*)
+Hint Extern 0 (Related _ _ _) => progress intros : typeclass_instances.
 
 (* APP *)
 
@@ -100,8 +100,39 @@ Proof.
   related_tauto.
 Qed.
 
+(* Having the following instance allows transferring many
+   more theorems but prevent using "apply modulo" in the
+   same way as Isabelle transfer' tactic. *)
 (*
 Instance impl2 : forall (A : Prop), Related impl A A.
+Proof.
+  related_tauto.
+Qed.
+*)
+
+(* What shall we keep of the following? *)
+(*
+Instance impl3 : Related (iff ##> impl ##> impl) impl impl.
+Proof.
+  related_tauto.
+Qed.
+
+Instance impl4 : Related (flip impl ##> iff ##> impl) impl impl.
+Proof.
+  related_tauto.
+Qed.
+
+Instance impl5 : Related (iff ##> iff ##> impl) impl impl.
+Proof.
+  related_tauto.
+Qed.
+
+Instance impl6 : Related (iff ##> iff ##> iff) impl impl.
+Proof.
+  related_tauto.
+Qed.
+
+Instance iff1 : Related (iff ##> iff ##> iff) iff iff.
 Proof.
   related_tauto.
 Qed.
@@ -117,4 +148,21 @@ Instance or1 :
   Related (impl ##> impl ##> impl) or or.
 Proof.
   related_tauto.
+Qed.
+
+Instance eq1 :
+  forall (A : Type),
+  Related (eq ##> eq ##> impl) (@eq A) (@eq A).
+Proof.
+  related_basics.
+  intros x x' Hx y y' Hy Heq.
+  rewrite <- Hx, <- Hy.
+  assumption.
+Qed.
+
+Instance eq2 :
+  forall (A : Type) (x : A), Related eq x x.
+Proof.
+  split.
+  reflexivity.
 Qed.
