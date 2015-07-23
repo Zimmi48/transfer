@@ -72,14 +72,14 @@ Ltac solve thm :=
 
 Instance inj : Related (natN ##> natN ##> impl) eq eq.
 Proof.
-  solve N2Nat.inj.
+  solve inj.
 Qed.
-
+(*
 Instance inj_iff : Related (natN ##> natN ##> iff) eq eq.
 Proof.
   solve inj_iff.
 Qed.
-
+*)
 (* inj_double, inj_succ_double *)
 
 Instance inj_succ : Related (natN ##> natN) S N.succ.
@@ -138,8 +138,6 @@ Qed.
 
 End N2Nat_transfer.
 
-(* The following shows a second way to get the same theorems *)
-
 Module Nat2N_transfer.
 
 Import Nat2N.
@@ -161,10 +159,13 @@ Ltac solve thm :=
   try (rewrite natN);
   apply thm.
 
-Instance inj_succ : Related (natN ##> natN) S N.succ.
+Instance inj : Related (natN ##> natN ##> flip impl) eq eq.
 Proof.
-  solve inj_succ.
+  solve inj.
 Qed.
+
+(* The rest would mean proving all the same theorems again,
+   so we won't do it although that can be done. *)
 
 (* Etc *)
 

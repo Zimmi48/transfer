@@ -62,8 +62,17 @@ Instance app
   (R : A -> B -> Prop) (R' : C -> D -> Prop)
   (f : A -> C) (f' : B -> D) (e : A) (e' : B)
   (inst_e : Related R e e') (inst_f : Related (R ##> R') f f') :
-  Related R' (f e) (f' e') :=
+  Related R' (f e) (f' e') | 2 :=
   { prf := (@prf _ _ _ _ _ inst_f) e e' (@prf _ _ _ _ _ inst_e) }.
+
+(* IFF - this rule is not ideal and we should get rid of it
+         by handling subrelations *)
+
+Instance iff_rule
+  (R : Prop -> Prop -> Prop)
+  (A B C D : Prop)
+  (inst : Related R ((A -> B) /\ (B -> A)) ((C -> D) /\ (D -> C))) :
+  Related R (iff A B) (iff C D) | 1 := { prf := prf }.
 
 (* ARROW *)
 Instance arrow_rule
@@ -162,8 +171,19 @@ Proof.
 Qed.
 
 Instance eq2 :
+  forall (A : Type),
+  Related (eq ##> eq ##> flip impl) (@eq A) (@eq A).
+Proof.
+  related_basics.
+  intros x x' Hx y y' Hy Heq.
+  rewrite Hx, Hy.
+  assumption.
+Qed.
+
+Instance eq3 :
   forall (A : Type) (x : A), Related eq x x.
 Proof.
   split.
   reflexivity.
 Qed.
+

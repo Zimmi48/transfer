@@ -65,31 +65,31 @@ Qed.
 (* The following cannot be transfered for now because the required
    transfer rules are missing. *)
 (*
-Lemma lt_succ_r n m : n < S m <-> n <= m.
+Lemma lt_succ_r : forall n m : N, n < S m <-> n <= m.
 Proof.
   exact (modulo Nat.lt_succ_r).
 Qed.
 
 (** ** Boolean comparisons *)
 
-Lemma eqb_eq n m : eqb n m = true <-> n = m.
+Lemma eqb_eq : forall n m : N, eqb n m = true <-> n = m.
 Proof.
   exact (modulo Nat.eqb_eq).
 Qed.
 
-Lemma leb_le n m : (n <=? m) = true <-> n <= m.
+Lemma leb_le : forall n m : N, (n <=? m) = true <-> n <= m.
 Proof.
   exact (modulo Nat.leb_le).
 Qed.
 
-Lemma ltb_lt n m : (n <? m) = true <-> n < m.
+Lemma ltb_lt : forall n m : N, (n <? m) = true <-> n < m.
 Proof.
   exact (modulo Nat.ltb_lt).
 Qed.
 
 (** ** Decidability of equality over [nat]. *)
 
-Lemma eq_dec : forall n m : nat, {n = m} + {n <> m}.
+Lemma eq_dec : forall n m : N, {n = m} + {n <> m}.
 Proof.
   exact (modulo Nat.eq_dec).
 Qed.
@@ -97,14 +97,12 @@ Qed.
 
 (** ** Ternary comparison *)
 
-(* Proof containing iff will require special care. *)
-(*
 Lemma compare_eq_iff : forall n m, N.compare n m = Eq <-> n = m.
 Proof.
-Typeclasses eauto := debug.
-  Fail exact (modulo Nat.compare_eq_iff).
-Abort.
+  exact (modulo Nat.compare_eq_iff).
+Qed.
 
+(*
 Lemma compare_lt_iff : forall n m, N.compare n m = Lt <-> n < m.
 Proof.
   exact (modulo Nat.compare_lt_iff).
