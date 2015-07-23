@@ -70,14 +70,15 @@ Instance arrow_rule
   (R : Prop -> Prop -> Prop)
   (t1 t2 t1' t2' : Prop)
   (inst : Related R (impl t1 t2) (impl t1' t2')) :
-  Related R (t1 -> t2) (t1' -> t2') := { prf := prf }.
+  Related R (t1 -> t2) (t1' -> t2') | 2 := { prf := prf }.
 
 (* FORALL *)
 Instance forall_rule
   (R : Prop -> Prop -> Prop)
   (t1 t1' : Type) (t2 : t1 -> Prop) (t2' : t1' -> Prop)
   (inst : Related R (all (fun x : t1 => t2 x)) (all (fun x' : t1' => t2' x'))) :
-  Related R (forall x : t1, t2 x) (forall x' : t1', t2' x') := { prf := prf }.
+  Related R (forall x : t1, t2 x) (forall x' : t1', t2' x') | 3 :=
+  { prf := prf }.
 
 (* Check modulo. launches an infinite loop *)
 
