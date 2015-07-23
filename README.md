@@ -1,10 +1,13 @@
 #Automatic transfer of theorems in Coq
 
-This repository contains two directories, *plugin* and *library*.
+This repository contains two directories, [*plugin*](plugin) and [*library*](library).
 
-The two contain independent implementations of way of transferring theorems but
-*library* is more recent, much more powerful and probably even easier to use so
-you should prefer that one.
+The two contain independent implementations of ways of transferring theorems but
+[*library*](library) is more recent, much more powerful
+(it can transfer all kinds of theorems
+whereas the first one was limited to theorems containing only foralls, implications
+and relations) and easier to load (since it is just a library). Thus, unless you
+have a good reason not to, you should use [*library*](library).
 
 Each directory contains instructions on how to use.
 
