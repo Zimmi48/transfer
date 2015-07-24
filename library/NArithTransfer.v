@@ -74,12 +74,12 @@ Instance inj : Related (natN ##> natN ##> impl) eq eq.
 Proof.
   solve inj.
 Qed.
-(*
+
 Instance inj_iff : Related (natN ##> natN ##> iff) eq eq.
 Proof.
   solve inj_iff.
 Qed.
-*)
+
 (* inj_double, inj_succ_double *)
 
 Instance inj_succ : Related (natN ##> natN) S N.succ.

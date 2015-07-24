@@ -181,7 +181,7 @@ Proof.
 Qed.
 
 Instance eq3 :
-  forall (A : Type) (x : A), Related eq x x.
+  forall (A : Set) (x : A), Related eq x x.
 Proof.
   split.
   reflexivity.
