@@ -187,3 +187,39 @@ Proof.
   reflexivity.
 Qed.
 
+(* How to declare surjectivity of a relation *)
+
+Theorem surj_decl :
+  forall (A B : Type) (R : A -> B -> Prop),
+  (forall x' : B, exists x : A, R x x') <->
+  ((R ##> impl) ##> impl) (@all A) (@all B).
+Proof.
+  intros A B R.
+  lazy delta zeta.
+  split.
+  + intros Hsurj p p' Hp Hall x'.
+    destruct (Hsurj x') as [x Rx].
+    apply (Hp x _); trivial.
+  + intros Hsurj.
+    apply (Hsurj (fun _ => True) _); trivial.
+    intros x x' Rx _.
+    exists x; trivial.
+Qed.
+
+Theorem tot_decl :
+  forall (A B : Type) (R : A -> B -> Prop),
+  (forall x : A, exists x' : B, R x x') <->
+  ((R ##> flip impl) ##> flip impl) (@all A) (@all B).
+Proof.
+  intros A B R.
+  lazy delta zeta.
+  split.
+  + intros Htot p p' Hp Hall x.
+    destruct (Htot x) as [x' Rx].
+    apply (Hp _ x'); trivial.
+  + intros Htot.
+    apply (Htot _ (fun _ => True)); trivial.
+    intros x x' Rx _.
+    exists x'; trivial.
+Qed.
+
