@@ -17,3 +17,36 @@ also be able to change your current proof goal from one representation
 to the other by doing ``apply modulo`` (this may not work well if you
 have more than two related representations). This way of using the
 transfer library was inspired by Isabelle ``transfer'`` tactic.
+
+##Transfer declarations
+
+First, you need to define a relation between the two types you consider:
+``R : A -> B -> Prop``.
+If you are given a function from one type to the other, say ``f : A -> B``,
+you may define ``R x y := f x = y``.
+
+Then you need to declare properties of this relation, such as injectivity
+(right-uniqueness), functionality (left-uniqueness), surjectivity
+(right-totality) and (left-)totality.
+
+The corresponding declarations should look like this:
+
+````
+Instance injectivity_of_R : Related (R ##> R ##> flip impl) (@eq A) (@eq B).
+
+Instance functionality_of_R : Related (R ##> R ##> impl) (@eq A) (@eq B).
+
+Instance surjectivity_of_R : Related ((R ##> impl) ##> impl) (@all A) (@all B).
+
+Instance totality_of_R : Related ((R ##> flip impl) ##> flip impl) (@all A) (@all B).
+````
+
+[Transfer.v](Transfer.v) contains proofs that the last two declarations correspond
+indeed to surjectivity and totality theorems.
+
+If some of these properties are not true for relation R, it may be possible to
+prove variants, for instance replacing equality with another equivalence
+or universal quantification with some bounded quantification.
+
+###Compatibility with functions and relations
+
