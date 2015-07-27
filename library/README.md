@@ -53,15 +53,24 @@ or universal quantification with some bounded quantification.
 Here are some examples of such declarations:
 
 ````
-Instance compat_with_binary_op : Related (R ##> R ##> R) bin_op_A bin_op_B
+Instance compat_with_binary_op : Related (R ##> R ##> R) bin_op_A bin_op_B.
 
-Instance compat_with_internal_function : Related (R ##> R) fun_A fun_B
+Instance compat_with_internal_function : Related (R ##> R) fun_A fun_B.
 
-Instance compat_with_external_function : Related (R ##> eq) fun_from_A fun_from_B
+Instance compat_with_external_function : Related (R ##> eq) fun_from_A fun_from_B.
 
-Instance compat_with_binary_relation_one_way : Related (R ##> R ##> impl) bin_rel_A bin_rel_B
+Instance compat_with_binary_relation_one_way : Related (R ##> R ##> impl) bin_rel_A bin_rel_B.
 
-Instance compat_with_binary_relation_other_way : Related (R ##> R ##> flip impl) bin_rel_A bin_rel_B
+Instance compat_with_binary_relation_other_way : Related (R ##> R ##> flip impl) bin_rel_A bin_rel_B.
+````
+
+NB: for now, all these declarations will be good only for transferring
+theorems from ``A`` to ``B``. If you need to go both ways, you should
+add the corresponding reversed declarations, even when they are equivalent.
+For instance:
+
+````
+Instance compat_with_binary_op' : Related (flip R ##> flip R ##> flip R) bin_op_B bin_op_A.
 ````
 
 ##Use of the library
@@ -78,6 +87,7 @@ This will unify the current goal with ``my_proved_thm`` modulo some known relati
 ##Change of representation
 
 ``modulo`` is a very general theorem:
+
 ````
 modulo : ?t -> ?u
 where
@@ -96,3 +106,19 @@ operating a change of representation.
 Since it is a more complicated task, it might also fail, or leave you a transformed
 goal which does not correspond to what you wanted (in particular when your type
 is related to several other types).
+
+Here is an example of how it can be used to go beyond ``exact (modulo thm)``:
+
+````
+Require Import NArithTransfer.
+
+Goal forall x1 y1 z1 : N, x1 = y1 -> N.add x1 z1 = N.add y1 z1.
+Proof.
+  apply modulo. (* Now the goal is: forall x x0 x1 : nat, x = x0 -> x + x1 = x0 + x1 *)
+  intros.
+  Check f_equal2_plus. (* f_equal2_plus : forall x1 y1 x2 y2 : nat, x1 = y1 -> x2 = y2 -> x1 + x2 = y1 + y2 *)
+  apply f_equal2_plus; trivial.
+Qed.
+````
+
+More interesting examples to come...
