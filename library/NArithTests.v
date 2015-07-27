@@ -11,68 +11,54 @@ Require Import NArithTransfer.
 
 Lemma pred_succ : forall n, N.pred (N.succ n) = n.
 Proof.
-  Typeclasses eauto := debug.
-  Fail apply modulo.
   exact (modulo Nat.pred_succ).
 Qed.
 
 Lemma pred_0 : N.pred 0 = 0%N.
 Proof.
-  apply modulo.
-  reflexivity.
-  (*exact (modulo Nat.pred_0).*)
+  exact (modulo Nat.pred_0).
 Qed.
 
 Lemma one_succ : 1%N = N.succ 0%N.
 Proof.
-  apply modulo.
-  reflexivity.
-  (*exact (modulo Nat.one_succ).*)
+  exact (modulo Nat.one_succ).
 Qed.
 
 Lemma two_succ : 2%N = N.succ 1%N.
 Proof.
-  apply modulo.
-  reflexivity.
-  (*exact (modulo Nat.two_succ).*)
+  exact (modulo Nat.two_succ).
 Qed.
 
 Lemma add_0_l : forall n, N.add 0 n = n.
 Proof.
-  Fail apply modulo.
   exact (modulo Nat.add_0_l).
 Qed.
 
 Lemma add_succ_l :
   forall n m, N.add (N.succ n) m = N.succ (N.add n m).
 Proof.
-  Fail apply modulo.
   exact (modulo Nat.add_succ_l).
 Qed.
 
 Lemma suc_0_r : forall n, N.sub n 0 = n.
 Proof.
-  Fail apply modulo.
   exact (modulo Nat.sub_0_r).
 Qed.
 
 Lemma sub_succ_r :
   forall n m, N.sub n (N.succ m) = N.pred (N.sub n m).
 Proof.
-  Fail apply modulo.
   exact (modulo Nat.sub_succ_r).
 Qed.
 
 Lemma mul_0_l : forall n, N.mul 0%N n = 0%N.
 Proof.
-  Fail apply modulo.
   exact (modulo Nat.mul_0_l).
 Qed.
 
 Lemma mul_succ_l :
   forall n m, N.mul (N.succ n) m = N.add (N.mul n m) m.
 Proof.
-  Fail apply modulo.
   exact (modulo Nat.mul_succ_l).
 Qed.
 
@@ -113,7 +99,6 @@ Qed.
 
 Lemma compare_eq_iff : forall n m, N.compare n m = Eq <-> n = m.
 Proof.
-  Fail apply modulo.
   exact (modulo Nat.compare_eq_iff).
 Qed.
 
@@ -137,6 +122,5 @@ Qed.
 Lemma compare_succ :
   forall n m, N.compare (N.succ n) (N.succ m) = N.compare n m.
 Proof.
-  Fail apply modulo.
   exact (modulo Nat.compare_succ).
 Qed.
