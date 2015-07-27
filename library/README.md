@@ -20,7 +20,8 @@ transfer library was inspired by Isabelle ``transfer'`` tactic.
 
 ##Transfer declarations
 
-First, you need to define a relation between the two types you consider:
+First, you need to define a relation between the two types you
+are considering:
 ``R : A -> B -> Prop``.
 If you are given a function from one type to the other, say ``f : A -> B``,
 you may define ``R x y := f x = y``.
@@ -31,7 +32,7 @@ Then you need to declare properties of this relation, such as injectivity
 
 The corresponding declarations should look like this:
 
-````
+```coq
 Instance injectivity_of_R : Related (R ##> R ##> flip impl) (@eq A) (@eq B).
 
 Instance functionality_of_R : Related (R ##> R ##> impl) (@eq A) (@eq B).
@@ -39,12 +40,12 @@ Instance functionality_of_R : Related (R ##> R ##> impl) (@eq A) (@eq B).
 Instance surjectivity_of_R : Related ((R ##> impl) ##> impl) (@all A) (@all B).
 
 Instance totality_of_R : Related ((R ##> flip impl) ##> flip impl) (@all A) (@all B).
-````
+```
 
 [Transfer.v](Transfer.v) contains proofs that the last two declarations correspond
 indeed to surjectivity and totality theorems.
 
-If some of these properties are not true for relation R, it may be possible to
+If some of these properties are not true for relation ``R``, it may be possible to
 prove variants, for instance replacing equality with another equivalence
 or universal quantification with some bounded quantification.
 
@@ -52,7 +53,7 @@ or universal quantification with some bounded quantification.
 
 Here are some examples of such declarations:
 
-````
+```coq
 Instance compat_with_binary_op : Related (R ##> R ##> R) bin_op_A bin_op_B.
 
 Instance compat_with_internal_function : Related (R ##> R) fun_A fun_B.
@@ -62,23 +63,23 @@ Instance compat_with_external_function : Related (R ##> eq) fun_from_A fun_from_
 Instance compat_with_binary_relation_one_way : Related (R ##> R ##> impl) bin_rel_A bin_rel_B.
 
 Instance compat_with_binary_relation_other_way : Related (R ##> R ##> flip impl) bin_rel_A bin_rel_B.
-````
+```
 
 NB: for now, all these declarations will be good only for transferring
 theorems from ``A`` to ``B``. If you need to go both ways, you should
 add the corresponding reversed declarations, even when they are equivalent.
 For instance:
 
-````
+```coq
 Instance compat_with_binary_op' : Related (flip R ##> flip R ##> flip R) bin_op_B bin_op_A.
-````
+```
 
 ##Use of the library
 
 ###Transfer of theorems
 
 You can see examples of transferred theorems in [NArithTests.v](NArithTests.v).
-Theorems which have the same form but for related objects (in particular, quantification is
+When two theorems have the same form but for related objects (in particular, quantification is
 on two different types), you can prove only one of them and use
 ``exact (modulo my_proved_thm)`` to get a proof of the other.
 This will unify the current goal with ``my_proved_thm`` modulo some known relations
@@ -88,13 +89,13 @@ This will unify the current goal with ``my_proved_thm`` modulo some known relati
 
 ``modulo`` is a very general theorem:
 
-````
+```coq
 modulo : ?t -> ?u
 where
 ?t : [ |- Prop]
 ?u : [ |- Prop]
 ?class : [ |- Related impl ?t ?u]
-````
+```
 
 By calling it through ``exact (modulo thm)`` you are providing it with the values
 of ``?t`` and ``?u`` and it just has to infer a proof of ``Related impl ?t ?u``
@@ -109,7 +110,7 @@ is related to several other types).
 
 Here is an example of how it can be used to go beyond ``exact (modulo thm)``:
 
-````
+```coq
 Require Import NArithTransfer.
 
 Goal forall x1 y1 z1 : N, x1 = y1 -> N.add x1 z1 = N.add y1 z1.
@@ -119,6 +120,6 @@ Proof.
   Check f_equal2_plus. (* f_equal2_plus : forall x1 y1 x2 y2 : nat, x1 = y1 -> x2 = y2 -> x1 + x2 = y1 + y2 *)
   apply f_equal2_plus; trivial.
 Qed.
-````
+```
 
 More interesting examples to come...
