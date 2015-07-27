@@ -50,3 +50,49 @@ or universal quantification with some bounded quantification.
 
 ###Compatibility with functions and relations
 
+Here are some examples of such declarations:
+
+````
+Instance compat_with_binary_op : Related (R ##> R ##> R) bin_op_A bin_op_B
+
+Instance compat_with_internal_function : Related (R ##> R) fun_A fun_B
+
+Instance compat_with_external_function : Related (R ##> eq) fun_from_A fun_from_B
+
+Instance compat_with_binary_relation_one_way : Related (R ##> R ##> impl) bin_rel_A bin_rel_B
+
+Instance compat_with_binary_relation_other_way : Related (R ##> R ##> flip impl) bin_rel_A bin_rel_B
+````
+
+##Use of the library
+
+###Transfer of theorems
+
+You can see examples of transferred theorems in [NArithTests.v](NArithTests.v).
+Theorems which have the same form but for related objects (in particular, quantification is
+on two different types), you can prove only one of them and use
+``exact (modulo my_proved_thm)`` to get a proof of the other.
+This will unify the current goal with ``my_proved_thm`` modulo some known relations
+(previously declared as instances of ``Related``).
+
+##Change of representation
+
+``modulo`` is a very general theorem:
+````
+modulo : ?t -> ?u
+where
+?t : [ |- Prop]
+?u : [ |- Prop]
+?class : [ |- Related impl ?t ?u]
+````
+
+By calling it through ``exact (modulo thm)`` you are providing it with the values
+of ``?t`` and ``?u`` and it just has to infer a proof of ``Related impl ?t ?u``
+from the known ``Related`` instances.
+Another use however is to call ``apply modulo`` inside a proof development, thus
+providing ``?u`` but not ``?t``. In some cases, it will be able to also infer
+the value of ``?t`` and leave you with a transformed goal, thus effectively
+operating a change of representation.
+Since it is a more complicated task, it might also fail, or leave you a transformed
+goal which does not correspond to what you wanted (in particular when your type
+is related to several other types).
