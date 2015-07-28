@@ -6,8 +6,9 @@ The two contain independent implementations of ways of transferring theorems but
 [*library*](library) is more recent, much more powerful
 (it can transfer all kinds of theorems
 whereas the first one was limited to theorems containing only foralls, implications
-and relations) and easier to load (since it is just a library). Thus, unless you
-have a good reason not to, you should use [*library*](library).
+and relations) and easier to load (since it is just a library).
+[*plugin*](plugin) is mostly there for historical reasons.
+We encourage you to use [*library*](library) instead.
 
 Each directory contains instructions on how to use.
 
