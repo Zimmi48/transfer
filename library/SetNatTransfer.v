@@ -72,7 +72,7 @@ Module TransferProp (E:InfDecType)(Fin:WSetsOn E).
         * firstorder omega.
   Qed.
 
-  Instance ordinal_n : forall n, Related SetNat (ordinal n) n.
+  Instance ordinal_n : forall n, Related SetNat (ordinal n) n | 9.
   Proof.
     split.
     apply ordinal_cardinal.
@@ -157,19 +157,89 @@ Module TransferProp (E:InfDecType)(Fin:WSetsOn E).
     exact (FinProp.cardinal_2 H1 H2).
   Qed.
 
-  Typeclasses eauto := debug.
+  (** Exactly as for Isabelle transfer package, we cannot express
+      the following lemma as a transfer rule. *)
+  Lemma disj_union :
+    forall s1 n1, SetNat s1 n1 ->
+    forall s2 n2, SetNat s2 n2 ->
+    Fin.Empty (Fin.inter s1 s2) ->
+    SetNat (Fin.union s1 s2) (n1 + n2).
+  Proof.
+    unfold SetNat.
+    intros s1 n1 H1 s2 n2 H2 Hcond.
+    assert (Hinter0 : Fin.cardinal (Fin.inter s1 s2) = 0).
+    { apply FinProp.cardinal_Empty. trivial. }
+    rewrite <- H1, <- H2.
+    rewrite <- FinProp.union_inter_cardinal.
+    rewrite Hinter0.
+    apply plus_n_O.
+  Qed.
+
+  (** There is a solution with partial functions but how can we
+      make use of it? *)
+  Definition disjSum s1 s2 :=
+    if Fin.is_empty (Fin.inter s1 s2) then Some (Fin.union s1 s2) else None.
+
+  Inductive SetOptionNat : option Fin.t -> nat -> Prop :=
+  | someSet : forall s n, SetNat s n -> SetOptionNat (Some s) n
+  | noSet : forall n, SetOptionNat None n.
+
+  Instance toSetOptionNat :
+    Related (SetNat ##> SetOptionNat) (@Some Fin.t) id.
+  Proof.
+    SetNat_basics.
+    apply someSet.
+    reflexivity.
+  Qed.
+
+  Instance disj_union_bis :
+    Related (SetNat ##> SetNat ##> SetOptionNat) disjSum Nat.add.
+  Proof.
+    SetNat_basics.
+    unfold disjSum.
+    destruct (Fin.is_empty (Fin.inter s s0)) eqn:Hempty.
+    + apply someSet.
+      unfold SetNat.
+      assert (Hinter0 : Fin.cardinal (Fin.inter s s0) = 0).
+      { apply Fin.is_empty_spec in Hempty.
+        apply FinProp.cardinal_Empty. trivial. }
+      rewrite plus_n_O at 1.
+      rewrite <- Hinter0.
+      apply FinProp.union_inter_cardinal.
+    + apply noSet.
+  Qed.
+
+  Definition disjSum_pred s1 s2 s3 :=
+    Fin.Empty (Fin.inter s1 s2) /\ Fin.Equal (Fin.union s1 s2) s3.
+  
+  Definition sum_pred n1 n2 n3 := n1 + n2 = n3.
+  
+  Instance disj_union_ter :
+    Related (SetNat ##> SetNat ##> SetNat ##> impl) disjSum_pred sum_pred.
+  Proof.
+    SetNat_basics.
+    unfold disjSum_pred.
+    unfold sum_pred.
+    intros [H1 H2].
+    rewrite <- H2.
+    symmetry.
+    apply disj_union; trivial.
+    all:reflexivity.
+  Qed.
+
+  (* Tests *)
 
   Goal 0 + 1 = 1.
   Proof.
-    apply modulo.
-    reflexivity.
-    Unshelve.
-    exact (E.infty 0).
+    enough (disjSum_pred Fin.empty (Fin.singleton (E.infty 0))
+                         (Fin.singleton (E.infty 0))).
+    { change (sum_pred 0 1 1).
+      exact (modulo H). }
+    unfold disjSum_pred.
+    split; FinDec.fsetdec.
   Qed.
 
-  Goal forall x, S x = x + 1.
-  Proof.
-    Fail apply modulo.
-  Abort.
+  (* This is still a little too much complicated!
+     And we do not have a choose operator to try more interesting proofs. *)
 
 End TransferProp.
