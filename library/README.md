@@ -122,4 +122,20 @@ Proof.
 Qed.
 ```
 
-More interesting examples to come...
+There is an implementation problem which makes it difficult handling theorems
+where there is no implication under the quantifiers. To work around this
+limitation, it may be useful to insert dummy hypotheses as in the following example:
+```coq
+Require Import NArithTransfer.
+
+(** ** Basic specifications : pred add sub mul *)
+
+Goal forall n, N.pred (N.succ n) = n.
+Proof.
+  enough (forall n, True -> N.pred (N.succ n) = n) by firstorder. (* Adding dummy hypothesis *)
+  apply modulo. (* Now the goal is: forall n : nat, True -> Nat.pred (S n) = n *)
+  intros n _.
+  apply PeanoNat.Nat.pred_succ.
+Qed.
+```
+

@@ -120,6 +120,16 @@ Proof.
 Qed.
 *)
 
+Instance true1 : Related (flip impl) True True.
+Proof.
+  related_tauto.
+Qed.
+
+Instance true2 : Related impl True True.
+Proof.
+  related_tauto.
+Qed.
+
 (* What shall we keep of the following? *)
 (*
 Instance impl3 : Related (iff ##> impl ##> impl) impl impl.
