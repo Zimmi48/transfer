@@ -50,7 +50,7 @@ Instance lambda
   (R : A -> B -> Prop) (R' : C -> D -> Prop)
   (t : A -> C) (t' : B -> D)
   (inst : forall (x : A) (x' : B), R x x' -> Related R' (t x) (t' x')) :
-  Related (R ##> R') (fun x : A => t x) (fun x' : B => t' x') :=
+  Related (R ##> R') (fun x : A => t x) (fun x' : B => t' x') | 3 :=
   { prf := fun (x : A) (x' : B) (H : R x x') => @prf _ _ _ _ _ (inst x x' H) }.
 
 Hint Extern 0 (Related _ _ _) => progress intros : typeclass_instances.
