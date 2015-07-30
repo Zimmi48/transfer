@@ -74,7 +74,7 @@ For instance:
 Instance compat_with_binary_op' : Related (flip R ##> flip R ##> flip R) bin_op_B bin_op_A.
 ```
 
-##Use of the library
+##Usage of the library
 
 ###Transfer of theorems
 
