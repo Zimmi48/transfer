@@ -32,6 +32,10 @@ Qed.
 
 Check modulo.
 
+Tactic Notation "exactm" constr(t) := exact (modulo t).
+Tactic Notation "applym" constr(t) := apply (modulo t).
+Tactic Notation "transfer" := apply modulo.
+
 (* RULES *)
 
 (* ENV *)
