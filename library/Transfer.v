@@ -42,10 +42,23 @@ Tactic Notation "transfer" := apply modulo.
 
 Ltac env R t t' :=
   match goal with
-    | [ p : R t t' |- _ ] => split; eexact p
+    | [ p : ?R t t' |- _ ] => try (split; eexact p)
   end.
 
 Hint Extern 1 (Related ?R ?t ?t') => env R t t' : typeclass_instances.
+
+(* With subrelations *)
+
+Class subrelationH {A B : Type} (R R' : A -> B -> Prop) : Prop :=
+    is_subrelationH : forall {x y}, R x y -> R' x y.
+(*
+Ltac envSub R t t' :=
+  match goal with
+    | [ p : ?R t t' |- _ ] => try (split; eexact (is_subrelationH p))
+  end.
+
+Hint Extern 1 (Related ?R ?t ?t') => envSub R t t' : typeclass_instances.
+*)
 
 (* LAMBDA *)
 
@@ -60,7 +73,6 @@ Instance lambda
 Hint Extern 0 (Related _ _ _) => progress intros : typeclass_instances.
 
 (* APP *)
-
 Instance app
   (A B C D : Type)
   (R : A -> B -> Prop) (R' : C -> D -> Prop)
@@ -76,24 +88,47 @@ Instance iff_rule
   (R : Prop -> Prop -> Prop)
   (A B C D : Prop)
   (inst : Related R ((A -> B) /\ (B -> A)) ((C -> D) /\ (D -> C))) :
-  Related R (iff A B) (iff C D) | 1 := { prf := prf }.
+  Related R (iff A B) (iff C D) | 1.
+Proof. unfold iff; exact inst. Qed.
 
 (* ARROW *)
+
 Instance arrow_rule
   (R : Prop -> Prop -> Prop)
   (t1 t2 t1' t2' : Prop)
   (inst : Related R (impl t1 t2) (impl t1' t2')) :
-  Related R (t1 -> t2) (t1' -> t2') | 2 := { prf := prf }.
+  Related R (t1 -> t2) (t1' -> t2') | 2.
+Proof. unfold impl; exact inst. Qed.
 
 (* FORALL *)
 Instance forall_rule
   (R : Prop -> Prop -> Prop)
   (t1 t1' : Type) (t2 : t1 -> Prop) (t2' : t1' -> Prop)
   (inst : Related R (all (fun x : t1 => t2 x)) (all (fun x' : t1' => t2' x'))) :
-  Related R (forall x : t1, t2 x) (forall x' : t1', t2' x') | 3 :=
-  { prf := prf }.
+  Related R (forall x : t1, t2 x) (forall x' : t1', t2' x') | 3.
+Proof. unfold all; exact inst. Qed.
 
 (* Check modulo. launches an infinite loop *)
+
+(* Subrelations *)
+
+Instance sub_iff_impl : subrelationH iff impl.
+Proof. unfold subrelationH ; tauto. Qed.
+
+Instance sub_iff_flip_impl : subrelationH iff (flip impl).
+Proof. unfold subrelationH; tauto. Qed.
+
+Instance sub_respectful_left
+  (A B C D : Type)
+  (R1 R2 : A -> B -> Prop) (R' : C -> D -> Prop) :
+  subrelationH R1 R2 -> subrelationH (R2 ##> R') (R1 ##> R').
+Proof. unfold subrelationH; unfold respectful_arrow; firstorder. Qed.
+
+Instance sub_respectful_right
+  (A B C D : Type)
+  (R : A -> B -> Prop) (R1' R2' : C -> D -> Prop) :
+  subrelationH R1' R2' -> subrelationH (R ##> R1') (R ##> R2').
+Proof. unfold subrelationH; unfold respectful_arrow; firstorder. Qed.
 
 (* Predefined instances *)
 
