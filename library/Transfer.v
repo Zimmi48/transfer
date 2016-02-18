@@ -24,6 +24,7 @@ Arguments Related {A B} _ _ _.
 
 Generalizable Variables t u.
 Theorem modulo `{class : Related _ _ impl t u} : t -> u.
+Proof.
   intro.
   assert (prf := prf).
   unfold impl in prf.
@@ -40,25 +41,33 @@ Tactic Notation "transfer" := apply modulo.
 
 (* ENV *)
 
-Ltac env R t t' :=
+Ltac env _ t t' :=
   match goal with
-    | [ p : ?R t t' |- _ ] => try (split; eexact p)
+    | [ p : _ t t' |- _ ] => split; eexact p
   end.
 
 Hint Extern 1 (Related ?R ?t ?t') => env R t t' : typeclass_instances.
 
 (* With subrelations *)
+(*
+Class subrelationH {A B : Type} (R R' : A -> B -> Prop) : Prop :=
+    is_subrelationH : forall x y, R x y -> R' x y.
+
+Ltac envSub R2 t t' :=
+  match goal with
+    | [ p : ?R1 t t' |- _ ] => split; eexact (@is_subrelationH _ _ R1 R2 _ _ p)
+  end.
+*)
 
 Class subrelationH {A B : Type} (R R' : A -> B -> Prop) : Prop :=
     is_subrelationH : forall {x y}, R x y -> R' x y.
-(*
-Ltac envSub R t t' :=
+
+Ltac envSub R2 t t' :=
   match goal with
-    | [ p : ?R t t' |- _ ] => try (split; eexact (is_subrelationH p))
+    | [ p : ?R1 t t' |- _ ] => split; eexact (is_subrelationH p)
   end.
 
 Hint Extern 1 (Related ?R ?t ?t') => envSub R t t' : typeclass_instances.
-*)
 
 (* LAMBDA *)
 
@@ -77,7 +86,7 @@ Instance app
   (A B C D : Type)
   (R : A -> B -> Prop) (R' : C -> D -> Prop)
   (f : A -> C) (f' : B -> D) (e : A) (e' : B)
-  (inst_e : Related R e e') (inst_f : Related (R ##> R') f f') :
+  (inst_f : Related (R ##> R') f f') (inst_e : Related R e e') :
   Related R' (f e) (f' e') | 2 :=
   { prf := (@prf _ _ _ _ _ inst_f) e e' (@prf _ _ _ _ _ inst_e) }.
 
@@ -149,11 +158,17 @@ Proof.
   related_tauto.
 Qed.
 
+Instance impl2 :
+  Related (impl ##> flip impl ##> flip impl) impl impl.
+Proof.
+  related_tauto.
+Qed.
+
 (* Having the following instance allows transferring many
    more theorems but prevent using "apply modulo" in the
    same way as Isabelle transfer' tactic. *)
 (*
-Instance impl2 : forall (A : Prop), Related impl A A.
+Instance impl_reflexivity : forall (A : Prop), Related impl A A.
 Proof.
   related_tauto.
 Qed.
@@ -171,22 +186,22 @@ Qed.
 
 (* What shall we keep of the following? *)
 (*
-Instance impl3 : Related (iff ##> impl ##> impl) impl impl.
+Instance iff_impl1 : Related (iff ##> impl ##> impl) impl impl.
 Proof.
   related_tauto.
 Qed.
 
-Instance impl4 : Related (flip impl ##> iff ##> impl) impl impl.
+Instance iff_impl2 : Related (flip impl ##> iff ##> impl) impl impl.
 Proof.
   related_tauto.
 Qed.
 
-Instance impl5 : Related (iff ##> iff ##> impl) impl impl.
+Instance iff_impl3 : Related (iff ##> iff ##> impl) impl impl.
 Proof.
   related_tauto.
 Qed.
 
-Instance impl6 : Related (iff ##> iff ##> iff) impl impl.
+Instance iff_impl4 : Related (iff ##> iff ##> iff) impl impl.
 Proof.
   related_tauto.
 Qed.
@@ -229,7 +244,7 @@ Proof.
   assumption.
 Qed.
 
-Instance eq3 :
+Instance eq_reflexivity :
   forall (A : Set) (x : A), Related eq x x.
 Proof.
   split.
