@@ -12,7 +12,7 @@ Definition natN x x' := N.of_nat x = x'.
 
 (* Two very important transfer rules *)
 
-Instance natN_surjective :
+Instance natN_surjective_total :
   Related ((natN ##> iff) ##> iff) (@all nat) (@all N).
 Proof.
   related_basics.
@@ -61,11 +61,6 @@ Ltac solve thm :=
    flip eq *)
 
 (* Rewrite all theorems from N2Nat *)
-
-Instance inj : Related (natN ##> natN ##> impl) eq eq.
-Proof.
-  solve inj.
-Qed.
 
 Instance inj_iff : Related (natN ##> natN ##> iff) eq eq.
 Proof.
@@ -150,11 +145,6 @@ Ltac solve thm :=
   repeat unfold_natN;
   try (rewrite natN);
   apply thm.
-
-Instance inj : Related (natN ##> natN ##> flip impl) eq eq.
-Proof.
-  solve inj.
-Qed.
 
 (* The rest would mean proving all the same theorems again,
    so we won't do it although that can be done. *)
