@@ -20,6 +20,9 @@ Class Related
   (A B : Type) (R : A -> B -> Prop) (t : A) (t' : B) : Prop :=
   { prf : R t t' }.
 
+(* Strict subrelation *)
+Class HeteroSubrel {A B : Type} (R R' : A -> B -> Prop) : Prop :=
+    is_heteroSubrel : forall {x y}, R x y -> R' x y.
 Arguments Related {A B} _ _ _.
 
 Generalizable Variables t u.
@@ -41,37 +44,27 @@ Tactic Notation "transfer" := apply modulo.
 
 (* ENV *)
 
-Ltac env _ t t' :=
+Ltac env_rule _ t t' :=
   match goal with
     | [ p : _ t t' |- _ ] => split; eexact p
   end.
 
-Hint Extern 1 (Related ?R ?t ?t') => env R t t' : typeclass_instances.
+Hint Extern 1 (Related ?R ?t ?t') => env_rule R t t' : typeclass_instances.
 
-(* With subrelations *)
-(*
-Class subrelationH {A B : Type} (R R' : A -> B -> Prop) : Prop :=
-    is_subrelationH : forall x y, R x y -> R' x y.
+(* SUBREL *)
 
-Ltac envSub R2 t t' :=
-  match goal with
-    | [ p : ?R1 t t' |- _ ] => split; eexact (@is_subrelationH _ _ R1 R2 _ _ p)
-  end.
-*)
-
-Class subrelationH {A B : Type} (R R' : A -> B -> Prop) : Prop :=
-    is_subrelationH : forall {x y}, R x y -> R' x y.
-
-Ltac envSub R2 t t' :=
-  match goal with
-    | [ p : ?R1 t t' |- _ ] => split; eexact (is_subrelationH p)
-  end.
-
-Hint Extern 1 (Related ?R ?t ?t') => envSub R t t' : typeclass_instances.
+Instance subrel_rule
+  (A B : Type)
+  (R R' : A -> B -> Prop)
+  (t : A) (t' : B)
+  (subrel_inst : HeteroSubrel R R')
+  (inst : Related R t t') :
+  Related R' t t' | 1 :=
+  { prf := is_heteroSubrel prf }.
 
 (* LAMBDA *)
 
-Instance lambda
+Instance lambda_rule
   (A B C D : Type)
   (R : A -> B -> Prop) (R' : C -> D -> Prop)
   (t : A -> C) (t' : B -> D)
@@ -82,23 +75,13 @@ Instance lambda
 Hint Extern 0 (Related _ _ _) => progress intros : typeclass_instances.
 
 (* APP *)
-Instance app
+Instance app_rule
   (A B C D : Type)
   (R : A -> B -> Prop) (R' : C -> D -> Prop)
   (f : A -> C) (f' : B -> D) (e : A) (e' : B)
   (inst_f : Related (R ##> R') f f') (inst_e : Related R e e') :
   Related R' (f e) (f' e') | 2 :=
   { prf := (@prf _ _ _ _ _ inst_f) e e' (@prf _ _ _ _ _ inst_e) }.
-
-(* IFF - this rule is not ideal and we should get rid of it
-         by handling subrelations *)
-
-Instance iff_rule
-  (R : Prop -> Prop -> Prop)
-  (A B C D : Prop)
-  (inst : Related R ((A -> B) /\ (B -> A)) ((C -> D) /\ (D -> C))) :
-  Related R (iff A B) (iff C D) | 1.
-Proof. unfold iff; exact inst. Qed.
 
 (* ARROW *)
 
@@ -121,23 +104,23 @@ Proof. unfold all; exact inst. Qed.
 
 (* Subrelations *)
 
-Instance sub_iff_impl : subrelationH iff impl.
-Proof. unfold subrelationH ; tauto. Qed.
+Instance sub_iff_impl : HeteroSubrel iff impl.
+Proof. unfold HeteroSubrel ; tauto. Qed.
 
-Instance sub_iff_flip_impl : subrelationH iff (flip impl).
-Proof. unfold subrelationH; tauto. Qed.
+Instance sub_iff_flip_impl : HeteroSubrel iff (flip impl).
+Proof. unfold HeteroSubrel; tauto. Qed.
 
 Instance sub_respectful_left
   (A B C D : Type)
   (R1 R2 : A -> B -> Prop) (R' : C -> D -> Prop) :
-  subrelationH R1 R2 -> subrelationH (R2 ##> R') (R1 ##> R').
-Proof. unfold subrelationH; unfold respectful_arrow; firstorder. Qed.
+  HeteroSubrel R1 R2 -> HeteroSubrel (R2 ##> R') (R1 ##> R').
+Proof. unfold HeteroSubrel; unfold respectful_arrow; firstorder. Qed.
 
 Instance sub_respectful_right
   (A B C D : Type)
   (R : A -> B -> Prop) (R1' R2' : C -> D -> Prop) :
-  subrelationH R1' R2' -> subrelationH (R ##> R1') (R ##> R2').
-Proof. unfold subrelationH; unfold respectful_arrow; firstorder. Qed.
+  HeteroSubrel R1' R2' -> HeteroSubrel (R ##> R1') (R ##> R2').
+Proof. unfold HeteroSubrel; unfold respectful_arrow; firstorder. Qed.
 
 (* Predefined instances *)
 
@@ -152,18 +135,6 @@ Ltac related_tauto :=
   related_basics;
   tauto.
 
-Instance impl1 :
-  Related (flip impl ##> impl ##> impl) impl impl.
-Proof.
-  related_tauto.
-Qed.
-
-Instance impl2 :
-  Related (impl ##> flip impl ##> flip impl) impl impl.
-Proof.
-  related_tauto.
-Qed.
-
 (* Having the following instance allows transferring many
    more theorems but prevent using "apply modulo" in the
    same way as Isabelle transfer' tactic. *)
@@ -174,74 +145,43 @@ Proof.
 Qed.
 *)
 
-Instance true1 : Related (flip impl) True True.
+Instance true_rule : Related iff True True.
 Proof.
   related_tauto.
 Qed.
 
-Instance true2 : Related impl True True.
+Instance impl_rule : Related (iff ##> iff ##> iff) impl impl.
 Proof.
   related_tauto.
 Qed.
 
-(* What shall we keep of the following? *)
-(*
-Instance iff_impl1 : Related (iff ##> impl ##> impl) impl impl.
+Instance iff_rule : Related (iff ##> iff ##> iff) iff iff.
 Proof.
   related_tauto.
 Qed.
 
-Instance iff_impl2 : Related (flip impl ##> iff ##> impl) impl impl.
+Instance and_rule :
+  Related (iff ##> iff ##> iff) and and.
 Proof.
   related_tauto.
 Qed.
 
-Instance iff_impl3 : Related (iff ##> iff ##> impl) impl impl.
+Instance or_rule :
+  Related (iff ##> iff ##> iff) or or.
 Proof.
   related_tauto.
 Qed.
 
-Instance iff_impl4 : Related (iff ##> iff ##> iff) impl impl.
-Proof.
-  related_tauto.
-Qed.
-
-Instance iff1 : Related (iff ##> iff ##> iff) iff iff.
-Proof.
-  related_tauto.
-Qed.
-*)
-
-Instance and1 :
-  Related (impl ##> impl ##> impl) and and.
-Proof.
-  related_tauto.
-Qed.
-
-Instance or1 :
-  Related (impl ##> impl ##> impl) or or.
-Proof.
-  related_tauto.
-Qed.
-
-Instance eq1 :
+Instance eq_rule :
   forall (A : Type),
-  Related (eq ##> eq ##> impl) (@eq A) (@eq A).
+  Related (eq ##> eq ##> iff) (@eq A) (@eq A).
 Proof.
   related_basics.
-  intros x x' Hx y y' Hy Heq.
-  rewrite <- Hx, <- Hy.
-  assumption.
-Qed.
-
-Instance eq2 :
-  forall (A : Type),
-  Related (eq ##> eq ##> flip impl) (@eq A) (@eq A).
-Proof.
-  related_basics.
-  intros x x' Hx y y' Hy Heq.
-  rewrite Hx, Hy.
-  assumption.
+  intros x x' Hx y y' Hy; split; intro Heq.
+  + rewrite <- Hx, <- Hy.
+    assumption.
+  + rewrite Hx, Hy.
+    assumption.
 Qed.
 
 Instance eq_reflexivity :
