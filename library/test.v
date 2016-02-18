@@ -2,25 +2,25 @@ Require Import Utf8.
 Require Import PeanoNat.
 Require Import NArithTransfer.
 
-Instance adhoc : Related (((natN ##> iff) ##> iff) ##> iff) (@all (nat → Prop)) (@all (N → Prop)).
+Instance adhoc
+  (A B : Type)
+  (R : A -> B -> Prop)
+  (inst : Related (R ##> R ##> iff) eq eq) :
+  Related (((R ##> iff) ##> iff) ##> iff) (@all (A -> Prop)) (@all (B -> Prop)).
 Proof.
   related_basics.
-  intros PP PP' bigH.
-  split.
+  assert (prf := prf); unfold respectful_arrow in prf.
+  intros PP PP' bigH; split.
   + intros PPuniversal P'.
-    set (P := fun n => P' (N.of_nat n)).
-    apply (bigH P P'); [| now apply PPuniversal ].
-    intros n n' rel.
-    unfold P.
-    unfold natN in rel.
-    now rewrite rel.
+    apply (bigH (fun x => forall x', R x x' -> P' x') P'); [| now apply PPuniversal ].
+    intros n n' rel; split; auto; intros HP' x' rel2.
+    destruct (prf n n' rel n x' rel2) as [prf' _].
+    now rewrite <- prf'.
   + intros PP'universal P.
-    set (P' := fun n => P (N.to_nat n)).
-    apply (bigH P P'); [| now apply PP'universal ].
-    intros n n' rel.
-    unfold P'.
-    rewrite N2Nat_transfer.natN_bis in rel.
-    now rewrite <- rel.
+    apply (bigH P (fun x' => forall x, R x x' -> P x)); [| now apply PP'universal ].
+    intros n n' rel; split; auto; intros HP x rel2.
+    destruct (prf n n' rel x n' rel2) as [_ prf'].
+    now rewrite <- prf'.
 Qed.
 
 Theorem N_nat_ind : forall P : N -> Prop, P 0%N -> (forall n : N, P n -> P (N.succ n)) -> forall n : N, P n.
