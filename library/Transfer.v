@@ -20,10 +20,11 @@ Class Related
   (A B : Type) (R : A -> B -> Prop) (t : A) (t' : B) : Prop :=
   { prf : R t t' }.
 
+Arguments Related {A B} _ _ _.
+
 (* Strict subrelation *)
 Class HeteroSubrel {A B : Type} (R R' : A -> B -> Prop) : Prop :=
     is_heteroSubrel : forall {x y}, R x y -> R' x y.
-Arguments Related {A B} _ _ _.
 
 Generalizable Variables t u.
 Theorem modulo `{class : Related _ _ impl t u} : t -> u.
