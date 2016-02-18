@@ -227,3 +227,30 @@ Proof.
     exists x'; trivial.
 Qed.
 
+Theorem surj_tot_decl :
+  forall (A B : Type) (R : A -> B -> Prop),
+  (forall x' : B, exists x : A, R x x') /\
+  (forall x : A, exists x' : B, R x x') ->
+  ((R ##> iff) ##> iff) (@all A) (@all B).
+Proof.
+  intros A B R.
+  lazy delta zeta.
+  intros [Hsurj Htot] p p' Hp; split; intros Hall.
+  + intro x'.
+    destruct (Hsurj x') as [x Rx].
+    apply (Hp x _); trivial.
+  + intro x.
+    destruct (Htot x) as [x' Rx].
+    apply (Hp _ x'); trivial.
+Qed.
+
+(* other approach:
+  intros A B R [Hsurj Htot].
+  apply surj_decl in Hsurj.
+  apply tot_decl in Htot.
+  apply is_heteroSubrel in Hsurj.
+  apply is_heteroSubrel in Htot.
+
+Then a little bit of work on intersection and union of relations
+and their compatibility with ##> is still needed. *)
+
