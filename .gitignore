@@ -8,6 +8,7 @@ Makefile
 *.aux
 *.glob
 *~
+*.v.d
 
 # tests
 transfer.v
