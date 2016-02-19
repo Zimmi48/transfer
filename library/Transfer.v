@@ -255,6 +255,19 @@ Qed.
 Then a little bit of work on intersection and union of relations
 and their compatibility with ##> is still needed. *)
 
+Theorem full_tot_decl_recip :
+  forall (A B : Type) (R : A -> B -> Prop),
+  ((R ##> iff) ##> iff) (@all A) (@all B) ->
+  (forall x' : B, exists x : A, R x x') /\
+  (forall x : A, exists x' : B, R x x').
+Proof.
+  intros * H; unfold respectful_arrow in H; split.
+  + intros x'.
+    apply (H (fun _ => True) (fun x' => exists x, R x x')); firstorder.
+  + intros x.
+    apply (H (fun x => exists x', R x x') (fun x' => True)); firstorder.
+Qed.
+
 Definition ball {A : Type} (subType : A -> Prop) (predicate : A -> Prop) :=
   forall x, subType x -> predicate x.
 
