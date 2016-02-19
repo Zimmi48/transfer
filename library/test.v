@@ -16,24 +16,22 @@ Instance adhoc
   (inst : Related (R ##> R ##> iff) eq eq) :
   Related (((R ##> iff) ##> iff) ##> iff) (@all (A -> Prop)) (@all (B -> Prop)).
 Proof.
-  related_basics.
   assert (prf := prf); unfold respectful_arrow in prf.
-  intros PP PP' bigH; split.
-  + intros PPuniversal P'.
-    apply (bigH (fun x => forall x', R x x' -> P' x') P'); [| now apply PPuniversal ].
-    intros n n' rel; split; auto; intros HP' x' rel2.
-    destruct (prf n n' rel n x' rel2) as [prf' _].
+  split; apply surj_tot_decl; split.
+  + intros P'.
+    exists (fun x => forall x', R x x' -> P' x').
+    intros x x' relx; split; auto; intros HP' y' relxy.
+    destruct (prf x x' relx x y' relxy) as [prf' _].
     now rewrite <- prf'.
-  + intros PP'universal P.
-    apply (bigH P (fun x' => forall x, R x x' -> P x)); [| now apply PP'universal ].
-    intros n n' rel; split; auto; intros HP x rel2.
-    destruct (prf n n' rel x n' rel2) as [_ prf'].
+  + intros P.
+    exists (fun x' => forall x, R x x' -> P x).
+    intros x x' relx; split; auto; intros HP y relyx.
+    destruct (prf x x' relx y x' relyx) as [_ prf'].
     now rewrite <- prf'.
 Qed.
 
 Theorem N_nat_ind : forall P : N -> Prop, P 0%N -> (forall n : N, P n -> P (N.succ n)) -> forall n : N, P n.
 Proof.
-  Typeclasses eauto := debug.
   exact (modulo nat_ind).
 Qed.
 
