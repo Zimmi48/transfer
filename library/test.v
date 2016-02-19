@@ -2,14 +2,6 @@ Require Import Utf8.
 Require Import PeanoNat.
 Require Import NArithTransfer.
 
-Instance natN_iff :
-  Related ((natN ##> iff) ##> iff) (@all nat) (@all N).
-Proof.
-  split; apply surj_tot_decl; split.
-  + apply surj_decl; apply natN_surjective.
-  + apply tot_decl; apply natN_total.
-Qed.
-
 Instance adhoc
   (A B : Type)
   (R : A -> B -> Prop)

@@ -10,25 +10,17 @@ Require Import Coq.NArith.Nnat.
 
 Definition natN x x' := N.of_nat x = x'.
 
-(* Two very important transfer rules *)
+(* Totality of natN *)
 
-Instance natN_surjective :
-  Related ((natN ##> impl) ##> impl) (@all nat) (@all N).
+Instance natN_surjective_total :
+  Related ((natN ##> iff) ##> iff) (@all nat) (@all N).
 Proof.
   related_basics.
   unfold natN.
-  intros f1 f2 Hf H x.
-  apply (Hf (N.to_nat x)); trivial.
-  apply N2Nat.id.
-Qed.
-
-Instance natN_total :
-  Related ((natN ##> flip impl) ##> flip impl) (@all nat) (@all N).
-Proof.
-  related_basics.
-  unfold natN.
-  intros f1 f2 Hf H x.
-  apply Hf with (e' := N.of_nat x); trivial.
+  intros f1 f2 Hf; split; intros H x.
+  + apply (Hf (N.to_nat x)); trivial.
+    apply N2Nat.id.
+  + apply Hf with (e' := N.of_nat x); trivial.
 Qed.
 
 Module N2Nat_transfer.
