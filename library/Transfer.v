@@ -228,7 +228,7 @@ Proof.
     exists x'; trivial.
 Qed.
 
-Theorem surj_tot_decl :
+Theorem full_tot_decl :
   forall (A B : Type) (R : A -> B -> Prop),
   (forall x' : B, exists x : A, R x x') /\
   (forall x : A, exists x' : B, R x x') ->
@@ -255,3 +255,26 @@ Qed.
 Then a little bit of work on intersection and union of relations
 and their compatibility with ##> is still needed. *)
 
+Definition ball {A : Type} (subType : A -> Prop) (predicate : A -> Prop) :=
+  forall x, subType x -> predicate x.
+
+Theorem generic_covered_decl :
+  forall (A B : Type) (R : A -> B -> Prop),
+  let coveredA := fun x => exists y, R x y in
+  let coveredB := fun y => exists x, R x y in
+  ((R ##> iff) ##> iff) (ball coveredA) (ball coveredB).
+Proof.
+  intros A B R coveredA coveredB.
+  lazy beta delta.
+  intros P P' Prel; split.
+  + intros HP x' (x & xrel).
+    destruct (Prel x x' xrel) as [Prel' _].
+    apply Prel'.
+    apply HP.
+    now exists x'.
+  + intros HP' x (x' & xrel).
+    destruct (Prel x x' xrel) as [_ Prel'].
+    apply Prel'.
+    apply HP'.
+    now exists x.
+Qed.
