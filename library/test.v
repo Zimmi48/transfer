@@ -13,6 +13,20 @@ Proof.
   erewrite Hfun; eauto.
 Qed.  
 
+Lemma half_total_predicate_recip :
+  forall (A B : Type) (R : A -> B -> Prop),
+    (forall P' : B -> Prop, exists P : A -> Prop, (R ##> iff) P P') ->
+    (forall (x : A) (x' y' : B), R x x' -> R x y' -> x' = y').
+Proof.
+  intros A B R Htot x x' y' relxx relxy.
+  destruct (Htot (eq x')) as (P & HP).
+  apply HP in relxx.
+  apply HP in relxy.
+  rewrite <- relxy.
+  rewrite relxx.
+  reflexivity.
+Qed.
+
 Instance total_predicate
   (A B : Type)
   (R : A -> B -> Prop)
