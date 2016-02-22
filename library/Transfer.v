@@ -291,3 +291,31 @@ Proof.
     apply HP'.
     now exists x.
 Qed.
+
+Theorem full_uniq_decl :
+  forall (A B : Type) (R : A -> B -> Prop),
+  (forall x x' y', R x x' -> R x y' -> x' = y') ->
+  (forall x y y', R x y' -> R y y' -> x = y) ->
+  (R ##> R ##> iff) eq eq.
+Proof.
+  intros A B R Hfun Hinj x x' relx y y' rely.
+  split; intro eq.
+  + apply (Hfun x); trivial.
+    now rewrite eq.
+  + apply (Hinj x y y'); trivial.
+    now rewrite <- eq.
+Qed.
+
+Theorem full_uniq_decl_recip :
+  forall (A B : Type) (R : A -> B -> Prop),
+  (R ##> R ##> iff) eq eq ->
+  (forall x x' y', R x x' -> R x y' -> x' = y') /\
+  (forall x y y', R x y' -> R y y' -> x = y).
+Proof.
+  intros A B R Huniq; lazy beta delta in Huniq; split; intros * rel1 rel2.
+  + generalize (eq_refl x).
+    now apply Huniq.
+  + generalize (eq_refl y').
+    now apply Huniq.
+Qed.
+
