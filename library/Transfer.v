@@ -38,7 +38,9 @@ Qed.
 Check modulo.
 
 Tactic Notation "exactm" constr(t) := exact (modulo t).
-Tactic Notation "applym" constr(t) := apply (modulo t).
+Tactic Notation "applym" constr(t) :=
+  let H := fresh in
+  pose (H := t); apply modulo in H; apply H; clear H.
 Tactic Notation "transfer" := apply modulo.
 
 (* RULES *)

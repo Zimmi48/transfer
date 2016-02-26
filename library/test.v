@@ -101,6 +101,8 @@ Abort.
 
 Theorem ex3: forall n : N, n = n.
 Proof.
-  apply N_nat_ind.
+  applym nat_ind.
+(* Is equivalent to:
+  apply N_nat_ind. *)
 
 

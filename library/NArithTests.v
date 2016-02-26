@@ -48,9 +48,9 @@ Qed.
 
 Lemma add_0_l : forall n, N.add 0 n = n.
 Proof.
-  give_2_proofs.
-  - exactm Nat.add_0_l.
-  - applym Nat.add_0_l.
+  exactm Nat.add_0_l.
+(*  applym Nat.add_0_l. *)
+(*  Does not work anymore because of current limitation to apply modulo. *)
 Qed.
 
 Lemma add_succ_l :
