@@ -27,6 +27,49 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma half_uniq_predicate :
+  forall (A B : Type) (R : A -> B -> Prop),
+    (forall x', exists x, R x x') ->
+    forall (P Q : A -> Prop) (P' Q' : B -> Prop),
+      (eq ##> iff) P Q -> (R ##> iff) P P' ->
+      (R ##> iff) Q Q' -> (eq ##> iff) P' Q'.
+Proof.
+  intros A B R H P Q P' Q' H0 H1 H2 x' y' <-.
+  destruct (H x') as (x & Hx).
+  pose proof Hx as Hx2.
+  apply H1 in Hx; rewrite <- Hx.
+  apply H2 in Hx2; rewrite <- Hx2.
+  now apply H0.
+Qed.
+
+Instance half_uniq_predicate_inst (A B : Type) (R : A -> B -> Prop) :
+  (Related ((R ##> iff) ##> iff) (@all A) (@all B)) ->
+  Related ((R ##> iff) ##> (R ##> iff) ##> iff) (eq ##> iff) (eq ##> iff).
+Proof.
+  intro.
+  destruct (full_tot_decl_recip _ _ _ prf) as [ Hsurj Htot ].
+  split; intros P P' relP Q Q' relQ; split.
+  + intro relPQ.
+    apply (half_uniq_predicate _ _ _ Hsurj P Q P' Q'); trivial.
+  + intro relPQ.
+    apply (half_uniq_predicate _ _ _ Htot P' Q' P Q); trivial; intros x' x relx. {
+      symmetry.
+      now apply relP.
+    }
+    apply relQ in relx.
+    now rewrite relx.
+Qed.
+
+Lemma half_uniq_predicate_recip :
+  forall (A B : Type) (R : A -> B -> Prop),
+    (forall (P : A -> Prop) (P' Q' : B -> Prop), (R ##> iff) P P' -> (R ##> iff) P Q' -> (eq ##> iff) P' Q') ->
+    forall x', exists x, R x x'.
+Proof.
+  intros A B R H.
+  pose (P' := fun x' => exists x, R x x').
+  change (forall x', P' x').
+Abort.
+
 Instance total_predicate
   (A B : Type)
   (R : A -> B -> Prop)
