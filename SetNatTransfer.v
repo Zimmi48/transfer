@@ -66,7 +66,9 @@ Module TransferProp (E:InfDecType)(Fin:WSetsOn E).
         apply FinProp.add_cardinal_2.
         firstorder omega.
       - cbn.
-        intros m [H|H]/Fin.add_spec.
+        intros m H.
+        apply Fin.add_spec in H.
+        destruct H as [H|H].
         * apply E.infty_inj in H.
           omega.
         * firstorder omega.
@@ -167,8 +169,8 @@ Module TransferProp (E:InfDecType)(Fin:WSetsOn E).
   Proof.
     unfold SetNat.
     intros s1 n1 H1 s2 n2 H2 Hcond.
-    assert (Hinter0 : Fin.cardinal (Fin.inter s1 s2) = 0).
-    { apply FinProp.cardinal_Empty. trivial. }
+    assert (Hinter0 : Fin.cardinal (Fin.inter s1 s2) = 0)
+      by now apply FinProp.cardinal_Empty.
     rewrite <- H1, <- H2.
     rewrite <- FinProp.union_inter_cardinal.
     rewrite Hinter0.
@@ -200,9 +202,10 @@ Module TransferProp (E:InfDecType)(Fin:WSetsOn E).
     destruct (Fin.is_empty (Fin.inter s s0)) eqn:Hempty.
     + apply someSet.
       unfold SetNat.
-      assert (Hinter0 : Fin.cardinal (Fin.inter s s0) = 0).
-      { apply Fin.is_empty_spec in Hempty.
-        apply FinProp.cardinal_Empty. trivial. }
+      assert (Hinter0 : Fin.cardinal (Fin.inter s s0) = 0). {
+        apply Fin.is_empty_spec in Hempty.
+        now apply FinProp.cardinal_Empty.
+      }
       rewrite plus_n_O at 1.
       rewrite <- Hinter0.
       apply FinProp.union_inter_cardinal.
@@ -232,9 +235,10 @@ Module TransferProp (E:InfDecType)(Fin:WSetsOn E).
   Goal 0 + 1 = 1.
   Proof.
     enough (disjSum_pred Fin.empty (Fin.singleton (E.infty 0))
-                         (Fin.singleton (E.infty 0))).
-    { change (sum_pred 0 1 1).
-      exact (modulo H). }
+                         (Fin.singleton (E.infty 0))). {
+      change (sum_pred 0 1 1).
+      exactm H.
+    }
     unfold disjSum_pred.
     split; FinDec.fsetdec.
   Qed.
