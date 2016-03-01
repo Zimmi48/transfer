@@ -18,7 +18,7 @@ Notation " R ##> R' " := (respectful_arrow R R')
 
 Class Related
   (A B : Type) (R : A -> B -> Prop) (t : A) (t' : B) : Prop :=
-  { prf : R t t' }.
+  is_related : R t t'.
 
 Arguments Related {A B} _ _ _.
 
@@ -29,9 +29,7 @@ Class HeteroSubrel {A B : Type} (R R' : A -> B -> Prop) : Prop :=
 Generalizable Variables t u.
 Theorem modulo `{class : Related _ _ impl t u} : t -> u.
 Proof.
-  intro.
-  pose proof prf as prf.
-  unfold impl in prf.
+  lazy beta delta in class.
   tauto.
 Qed.
 
@@ -49,7 +47,7 @@ Tactic Notation "transfer" := apply modulo.
 
 Ltac env_rule _ t t' :=
   match goal with
-    | [ p : _ t t' |- _ ] => split; eexact p
+    | [ p : _ t t' |- _ ] => eexact p
   end.
 
 Hint Extern 1 (Related ?R ?t ?t') => env_rule R t t' : typeclass_instances.
@@ -63,7 +61,7 @@ Instance subrel_rule
   (subrel_inst : HeteroSubrel R R')
   (inst : Related R t t') :
   Related R' t t' | 9 :=
-  { prf := is_heteroSubrel prf }.
+  { is_related := is_heteroSubrel is_related }.
 
 (* LAMBDA *)
 
@@ -73,7 +71,7 @@ Instance lambda_rule
   (t : A -> C) (t' : B -> D)
   (inst : forall (x : A) (x' : B), R x x' -> Related R' (t x) (t' x')) :
   Related (R ##> R') (fun x : A => t x) (fun x' : B => t' x') | 3 :=
-  { prf := fun (x : A) (x' : B) (H : R x x') => @prf _ _ _ _ _ (inst x x' H) }.
+  { is_related := fun (x : A) (x' : B) (H : R x x') => @is_related _ _ _ _ _ (inst x x' H) }.
 
 Hint Extern 0 (Related _ _ _) => intro; intro; intro : typeclass_instances.
 
@@ -84,7 +82,7 @@ Instance app_rule
   (f : A -> C) (f' : B -> D) (e : A) (e' : B)
   (inst_f : Related (R ##> R') f f') (inst_e : Related R e e') :
   Related R' (f e) (f' e') | 2 :=
-  { prf := (@prf _ _ _ _ _ inst_f) e e' (@prf _ _ _ _ _ inst_e) }.
+  { is_related := (@is_related _ _ _ _ _ inst_f) e e' (@is_related _ _ _ _ _ inst_e) }.
 
 (* ARROW *)
 
@@ -128,7 +126,8 @@ Proof. unfold HeteroSubrel; unfold respectful_arrow; firstorder. Qed.
 (* Predefined instances *)
 
 Ltac related_basics :=
-  split;
+  intros;
+  unfold Related;
   unfold respectful_arrow;
   unfold impl;
   unfold all;
@@ -189,10 +188,7 @@ Qed.
 
 Instance eq_reflexivity :
   forall (A : Set) (x : A), Related eq x x.
-Proof.
-  split.
-  reflexivity.
-Qed.
+Proof. reflexivity. Qed.
 
 (* How to declare surjectivity of a relation *)
 

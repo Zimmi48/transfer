@@ -31,17 +31,10 @@ Module TransferProp (E:InfDecType)(Fin:WSetsOn E).
   Definition SetNat s n := Fin.cardinal s = n.
 
   (** 0 has a unique and canonical set representation *)
-  Instance empty_0 : Related SetNat Fin.empty 0.
-  Proof.
-    split.
-    exact FinProp.empty_cardinal.
-  Qed.
+  Instance empty_0 : Related SetNat Fin.empty 0 := FinProp.empty_cardinal.
 
   Instance singleton_1 : forall x, Related SetNat (Fin.singleton x) 1.
-  Proof.
-    split.
-    apply FinProp.singleton_cardinal.
-  Qed.
+  Proof. apply FinProp.singleton_cardinal. Qed.
 
   Fixpoint ordinal n :=
     match n with
@@ -75,16 +68,10 @@ Module TransferProp (E:InfDecType)(Fin:WSetsOn E).
   Qed.
 
   Instance ordinal_n : forall n, Related SetNat (ordinal n) n | 9.
-  Proof.
-    split.
-    apply ordinal_cardinal.
-  Qed.
+  Proof. apply ordinal_cardinal. Qed.
 
   Instance anyset_cardinal : forall s, Related SetNat s (Fin.cardinal s).
-  Proof.
-    split.
-    reflexivity.
-  Qed.
+  Proof. reflexivity. Qed.
 
   (* Missing definition of cartesian product on MSets *)
 
@@ -128,7 +115,6 @@ Module TransferProp (E:InfDecType)(Fin:WSetsOn E).
 
   Instance surjectivity : Related ((SetNat ##> impl) ##> impl) (@all _) (@all _).
   Proof.
-    split.
     apply surj_decl.
     intros n.
     exists (ordinal n).
@@ -137,7 +123,6 @@ Module TransferProp (E:InfDecType)(Fin:WSetsOn E).
 
   Instance totality : Related ((SetNat ##> flip impl) ##> flip impl) (@all _) (@all _).
   Proof.
-    split.
     apply tot_decl.
     intros x.
     exists (Fin.cardinal x).

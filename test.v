@@ -47,8 +47,8 @@ Instance half_uniq_predicate_inst (A B : Type) (R : A -> B -> Prop) :
   Related ((R ##> iff) ##> (R ##> iff) ##> iff) (eq ##> iff) (eq ##> iff).
 Proof.
   intro.
-  destruct (full_tot_decl_recip _ _ _ prf) as [ Hsurj Htot ].
-  split; intros P P' relP Q Q' relQ; split.
+  destruct (full_tot_decl_recip _ _ _ is_related) as [ Hsurj Htot ].
+  intros P P' relP Q Q' relQ; split.
   + intro relPQ.
     apply (half_uniq_predicate _ _ _ Hsurj P Q P' Q'); trivial.
   + intro relPQ.
@@ -76,8 +76,8 @@ Instance total_predicate
   (inst : Related (R ##> R ##> iff) eq eq) :
   Related (((R ##> iff) ##> iff) ##> iff) (@all (A -> Prop)) (@all (B -> Prop)).
 Proof.
-  destruct (full_uniq_decl_recip _ _ _ prf) as [ Hfun Hinj ].
-  split; apply full_tot_decl; split.
+  destruct (full_uniq_decl_recip _ _ _ is_related) as [ Hfun Hinj ].
+  apply full_tot_decl; split.
   + exact (half_total_predicate _ Hfun).
   + intros *.
     edestruct (half_total_predicate (flip R)) as (P' & HP'); [ intros; eapply Hinj; eauto |].
