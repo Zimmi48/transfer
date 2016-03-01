@@ -209,7 +209,7 @@ Proof.
     exists x; trivial.
 Qed.
 
-Theorem tot_decl :
+Theorem lefttotal_decl :
   forall (A B : Type) (R : A -> B -> Prop),
   (forall x : A, exists x' : B, R x x') <->
   ((R ##> flip impl) ##> flip impl) (@all A) (@all B).
@@ -226,11 +226,14 @@ Proof.
     exists x'; trivial.
 Qed.
 
-Theorem full_tot_decl :
-  forall (A B : Type) (R : A -> B -> Prop),
-  (forall x' : B, exists x : A, R x x') /\
-  (forall x : A, exists x' : B, R x x') ->
+Definition bitotal {A B : Type} (R : A -> B -> Prop) :=
   ((R ##> iff) ##> iff) (@all A) (@all B).
+
+Theorem bitotal_decl :
+  forall (A B : Type) (R : A -> B -> Prop),
+    (forall x' : B, exists x : A, R x x') /\
+    (forall x : A, exists x' : B, R x x') ->
+    bitotal R.
 Proof.
   intros A B R.
   lazy delta zeta.
@@ -253,11 +256,11 @@ Qed.
 Then a little bit of work on intersection and union of relations
 and their compatibility with ##> is still needed. *)
 
-Theorem full_tot_decl_recip :
+Theorem bitotal_decl_recip :
   forall (A B : Type) (R : A -> B -> Prop),
-  ((R ##> iff) ##> iff) (@all A) (@all B) ->
-  (forall x' : B, exists x : A, R x x') /\
-  (forall x : A, exists x' : B, R x x').
+    bitotal R ->
+    (forall x' : B, exists x : A, R x x') /\
+    (forall x : A, exists x' : B, R x x').
 Proof.
   intros * H; unfold respectful_arrow in H; split.
   + intros x'.
@@ -271,9 +274,9 @@ Definition ball {A : Type} (subType : A -> Prop) (predicate : A -> Prop) :=
 
 Theorem generic_covered_decl :
   forall (A B : Type) (R : A -> B -> Prop),
-  let coveredA := fun x => exists y, R x y in
-  let coveredB := fun y => exists x, R x y in
-  ((R ##> iff) ##> iff) (ball coveredA) (ball coveredB).
+    let coveredA := fun x => exists y, R x y in
+    let coveredB := fun y => exists x, R x y in
+    ((R ##> iff) ##> iff) (ball coveredA) (ball coveredB).
 Proof.
   intros A B R coveredA coveredB.
   lazy beta delta.
@@ -290,25 +293,37 @@ Proof.
     now exists x.
 Qed.
 
-Theorem full_uniq_decl :
-  forall (A B : Type) (R : A -> B -> Prop),
-  (forall x x' y', R x x' -> R x y' -> x' = y') ->
-  (forall x y y', R x y' -> R y y' -> x = y) ->
-  (R ##> R ##> iff) eq eq.
+Require Import Coq.Classes.Equivalence.
+Require Coq.Setoids.Setoid.
+
+Generalizable Variables eqA eqB.
+Definition biunique {A B : Type}
+           `{Equivalence A eqA} `{Equivalence B eqB}
+           (R : A -> B -> Prop) :=
+  (R ##> R ##> iff) eqA eqB.
+
+Theorem biunique_decl :
+  forall {A B : Type}
+    `{Equivalence A eqA} `{Equivalence B eqB}
+    (R : A -> B -> Prop),
+    (forall x x' y', R x x' -> R x y' -> eqB x' y') ->
+    (forall x y y', R x y' -> R y y' -> eqA x y) ->
+    biunique R.
 Proof.
-  intros A B R Hfun Hinj x x' relx y y' rely.
+  intros * Hfun Hinj x x' relx y y' rely.
   split; intro eq.
   + apply (Hfun x); trivial.
-    now rewrite eq.
+    rewrite eq.
   + apply (Hinj x y y'); trivial.
     now rewrite <- eq.
 Qed.
 
-Theorem full_uniq_decl_recip :
-  forall (A B : Type) (R : A -> B -> Prop),
-  (R ##> R ##> iff) eq eq ->
-  (forall x x' y', R x x' -> R x y' -> x' = y') /\
-  (forall x y y', R x y' -> R y y' -> x = y).
+Theorem biunique_decl_recip :
+  forall (A B : Type)
+    (eqA : A -> A -> Prop) (eqB : B -> B -> Prop) (R : A -> B -> Prop),
+    biunique eqA eqB R ->
+    (forall x x' y', R x x' -> R x y' -> eqB x' y') /\
+    (forall x y y', R x y' -> R y y' -> eqA x y).
 Proof.
   intros A B R Huniq; lazy beta delta in Huniq; split; intros * rel1 rel2.
   + generalize (eq_refl x).
@@ -317,3 +332,22 @@ Proof.
     now apply Huniq.
 Qed.
 
+Theorem biunique_fun :
+  forall (A B C D: Type) (R : A -> B -> Prop) (S : C -> D -> Prop),
+    bitotal R -> biunique eq eq S -> biunique (eq ##> eq) (eq ##> eq) (R ##> S).
+Proof.
+  intros A B C D R S H1 H2.
+  apply bitotal_decl_recip in H1.
+  apply biunique_decl_recip in H2.
+  apply biunique_decl.
+  + intros f f' g' relf relfg.
+  + intro relPQ.
+    apply (half_uniq_predicate _ _ _ Hsurj P Q P' Q'); trivial.
+  + intro relPQ.
+    apply (half_uniq_predicate _ _ _ Htot P' Q' P Q); trivial; intros x' x relx. {
+      symmetry.
+      now apply relP.
+    }
+    apply relQ in relx.
+    now rewrite relx.
+Qed.

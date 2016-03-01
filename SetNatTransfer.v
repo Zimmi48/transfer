@@ -123,7 +123,7 @@ Module TransferProp (E:InfDecType)(Fin:WSetsOn E).
 
   Instance totality : Related ((SetNat ##> flip impl) ##> flip impl) (@all _) (@all _).
   Proof.
-    apply tot_decl.
+    apply lefttotal_decl.
     intros x.
     exists (Fin.cardinal x).
     reflexivity.
