@@ -62,7 +62,7 @@ Instance subrel_rule
   (t : A) (t' : B)
   (subrel_inst : HeteroSubrel R R')
   (inst : Related R t t') :
-  Related R' t t' | 1 :=
+  Related R' t t' | 9 :=
   { prf := is_heteroSubrel prf }.
 
 (* LAMBDA *)
@@ -75,7 +75,7 @@ Instance lambda_rule
   Related (R ##> R') (fun x : A => t x) (fun x' : B => t' x') | 3 :=
   { prf := fun (x : A) (x' : B) (H : R x x') => @prf _ _ _ _ _ (inst x x' H) }.
 
-Hint Extern 0 (Related _ _ _) => progress intros : typeclass_instances.
+Hint Extern 0 (Related _ _ _) => intro; intro; intro : typeclass_instances.
 
 (* APP *)
 Instance app_rule
