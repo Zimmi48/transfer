@@ -10,6 +10,18 @@ Require Import Coq.NArith.Nnat.
 
 Definition natN x x' := N.of_nat x = x'.
 
+Instance natN_nb : forall n : nat, Related natN n (N.of_nat n).
+Proof.
+  split.
+  reflexivity.
+Qed.
+
+Instance natN_nb' : forall n : N, Related natN (N.to_nat n) n.
+Proof.
+  split.
+  apply N2Nat.id.
+Qed.
+
 (* Totality of natN *)
 
 Instance natN_surjective_total :
@@ -162,24 +174,4 @@ Qed.
 (* Etc *)
 
 End Nat2N_transfer.
-
-(* Additional missing transfer rules *)
-
-Instance natN_zero : Related natN 0 0%N.
-Proof.
-  split.
-  reflexivity.
-Qed.
-
-Instance natN_one : Related natN 1 1%N.
-Proof.
-  split.
-  reflexivity.
-Qed.
-
-Instance natN_two : Related natN 2 2%N.
-Proof.
-  split.
-  reflexivity.
-Qed.
 

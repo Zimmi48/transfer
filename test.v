@@ -102,6 +102,7 @@ Abort.
 Theorem ex3: forall n : N, n = n.
 Proof.
   applym nat_ind.
+  simpl.
 (* Is equivalent to:
   apply N_nat_ind. *)
 
