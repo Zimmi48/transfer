@@ -1,3 +1,4 @@
+-R . Transfer
 Transfer.v
 NArithTransfer.v
 NArithTests.v
