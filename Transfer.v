@@ -322,3 +322,23 @@ Proof.
   + generalize (eq_refl y').
     now apply Huniq.
 Qed.
+
+Definition bijective {A B : Type} (R : A -> B -> Prop) := biunique R /\ bitotal R.
+
+Theorem bitotal_fun :
+  forall (A B C D : Type) (R : A -> B -> Prop) (S : C -> D -> Prop),
+    bijective R -> bitotal S -> bitotal (R ##> S).
+Proof.
+  intros * [biunique_R bitotal_R] bitotal_S F G.
+  apply bitotal_decl; clear F G.
+  apply biunique_decl_recip in biunique_R as [leftunique_R rightunique_R].
+  apply bitotal_decl_recip in bitotal_R as [lefttotal_R righttotal_R].
+  apply bitotal_decl_recip in bitotal_S as [lefttotal_S righttotal_S].
+  split.
+  + intros f'.
+    assert (f : A -> C). {
+      intros x.
+      apply righttotal_R.
+      cut B; [intros x' |].
+      specialize (lefttotal_S (f' x')).
+      destruct lefttotal_S.
