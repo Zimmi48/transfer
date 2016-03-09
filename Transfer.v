@@ -5,29 +5,29 @@
  * http://mozilla.org/MPL/2.0/.
  *)
 
-Require Export Program.Basics.
+Require Export Coq.Program.Basics Coq.Classes.CMorphisms.
 
 Definition respectful_arrow
   {A B C D: Type}
-  (R : A -> B -> Prop) (R' : C -> D -> Prop)
-  (f : A -> C) (f' : B -> D) : Prop :=
+  (R : A -> B -> Type) (R' : C -> D -> Type)
+  (f : A -> C) (f' : B -> D) : Type :=
   forall e e', R e e' -> R' (f e) (f' e').
 
 Notation " R ##> R' " := (respectful_arrow R R')
   (right associativity, at level 55) : type_scope.
 
 Class Related
-  (A B : Type) (R : A -> B -> Prop) (t : A) (t' : B) : Prop :=
+  (A B : Type) (R : A -> B -> Type) (t : A) (t' : B) : Prop :=
   is_related : R t t'.
 
 Arguments Related {A B} _ _ _.
 
 (* Strict subrelation *)
-Class HeteroSubrel {A B : Type} (R R' : A -> B -> Prop) : Prop :=
+Class HeteroSubrel {A B : Type} (R R' : A -> B -> Type) : Prop :=
   is_heteroSubrel : forall {x y}, R x y -> R' x y.
 
 Generalizable Variables t u.
-Theorem modulo `{class : Related _ _ impl t u} : t -> u.
+Theorem modulo `{class : Related _ _ arrow t u} : t -> u.
 Proof.
   lazy beta delta in class.
   tauto.
@@ -56,7 +56,7 @@ Hint Extern 1 (Related ?R ?t ?t') => env_rule R t t' : typeclass_instances.
 
 Instance subrel_rule
   (A B : Type)
-  (R R' : A -> B -> Prop)
+  (R R' : A -> B -> Type)
   (t : A) (t' : B)
   (subrel_inst : HeteroSubrel R R')
   (inst : Related R t t') :
@@ -67,18 +67,19 @@ Instance subrel_rule
 
 Instance lambda_rule
   (A B C D : Type)
-  (R : A -> B -> Prop) (R' : C -> D -> Prop)
+  (R : A -> B -> Type) (R' : C -> D -> Type)
   (t : A -> C) (t' : B -> D)
   (inst : forall (x : A) (x' : B), R x x' -> Related R' (t x) (t' x')) :
   Related (R ##> R') (fun x : A => t x) (fun x' : B => t' x') | 3 :=
   { is_related := fun (x : A) (x' : B) (H : R x x') => @is_related _ _ _ _ _ (inst x x' H) }.
 
-Hint Extern 0 (Related _ _ _) => intro; intro; intro : typeclass_instances.
+Hint Extern 0 (Related _ _ _) => progress intros ** : typeclass_instances.
 
 (* APP *)
+
 Instance app_rule
   (A B C D : Type)
-  (R : A -> B -> Prop) (R' : C -> D -> Prop)
+  (R : A -> B -> Type) (R' : C -> D -> Type)
   (f : A -> C) (f' : B -> D) (e : A) (e' : B)
   (inst_f : Related (R ##> R') f f') (inst_e : Related R e e') :
   Related R' (f e) (f' e') | 2 :=
@@ -90,38 +91,43 @@ Instance arrow_rule
   (R : Prop -> Prop -> Prop)
   (t1 t2 t1' t2' : Prop)
   (inst : Related R (impl t1 t2) (impl t1' t2')) :
-  Related R (t1 -> t2) (t1' -> t2') | 2.
-Proof. unfold impl; exact inst. Qed.
+  Related R (t1 -> t2) (t1' -> t2') | 2 := inst.
 
 (* FORALL *)
+
+Definition all_type {A : Type} (P : A -> Type) := forall x : A, P x.
+Typeclasses Opaque all_type.
+
 Instance forall_rule
-  (R : Prop -> Prop -> Prop)
-  (t1 t1' : Type) (t2 : t1 -> Prop) (t2' : t1' -> Prop)
-  (inst : Related R (all (fun x : t1 => t2 x)) (all (fun x' : t1' => t2' x'))) :
-  Related R (forall x : t1, t2 x) (forall x' : t1', t2' x') | 3.
-Proof. unfold all; exact inst. Qed.
+  (R : Type -> Type -> Type)
+  (t1 t1' : Type) (t2 : t1 -> Type) (t2' : t1' -> Type)
+  (inst : Related R (all_type (fun x : t1 => t2 x)) (all_type (fun x' : t1' => t2' x'))) :
+  Related R (forall x : t1, t2 x) (forall x' : t1', t2' x') | 3 := inst.
 
 (* Check modulo. launches an infinite loop *)
 
 (* Subrelations *)
 
-Instance sub_iff_impl : HeteroSubrel iff impl.
-Proof. unfold HeteroSubrel ; tauto. Qed.
+Instance sub_iffT_arrow : HeteroSubrel iffT arrow.
+Proof. firstorder. Qed.
 
-Instance sub_iff_flip_impl : HeteroSubrel iff (flip impl).
-Proof. unfold HeteroSubrel; tauto. Qed.
+Instance sub_iffT_flip_arrow : HeteroSubrel iffT (flip arrow).
+Proof. firstorder. Qed.
+
+Instance sub_iffT_iff : HeteroSubrel iff iffT.
+Proof. firstorder. Qed.
 
 Instance sub_respectful_left
   (A B C D : Type)
-  (R1 R2 : A -> B -> Prop) (R' : C -> D -> Prop) :
+  (R1 R2 : A -> B -> Type) (R' : C -> D -> Type) :
   HeteroSubrel R1 R2 -> HeteroSubrel (R2 ##> R') (R1 ##> R').
-Proof. unfold HeteroSubrel; unfold respectful_arrow; firstorder. Qed.
+Proof. firstorder. Qed.
 
 Instance sub_respectful_right
   (A B C D : Type)
-  (R : A -> B -> Prop) (R1' R2' : C -> D -> Prop) :
+  (R : A -> B -> Type) (R1' R2' : C -> D -> Type) :
   HeteroSubrel R1' R2' -> HeteroSubrel (R ##> R1') (R ##> R2').
-Proof. unfold HeteroSubrel; unfold respectful_arrow; firstorder. Qed.
+Proof. firstorder. Qed.
 
 (* Predefined instances *)
 
@@ -129,8 +135,9 @@ Ltac related_basics :=
   intros;
   unfold Related;
   unfold respectful_arrow;
+  unfold arrow;
   unfold impl;
-  unfold all;
+  unfold all_type;
   unfold flip.
 
 Ltac related_tauto :=
@@ -157,9 +164,9 @@ Proof.
   related_tauto.
 Qed.
 
-Instance iff_rule : Related (iff ##> iff ##> iff) iff iff.
+Instance iff_rule : Related (iff ##> iff ##> iffT) iff iff.
 Proof.
-  related_tauto.
+  firstorder.
 Qed.
 
 Instance and_rule :
@@ -186,6 +193,18 @@ Proof.
     assumption.
 Qed.
 
+Instance eq_rule' :
+  forall (A : Type),
+  Related (eq ##> eq ##> iffT) (@eq A) (@eq A).
+Proof.
+  related_basics.
+  intros x x' Hx y y' Hy; split; intro Heq.
+  + rewrite <- Hx, <- Hy.
+    assumption.
+  + rewrite Hx, Hy.
+    assumption.
+Qed.
+
 Instance eq_reflexivity :
   forall (A : Set) (x : A), Related eq x x.
 Proof. reflexivity. Qed.
@@ -193,51 +212,67 @@ Proof. reflexivity. Qed.
 (* How to declare surjectivity of a relation *)
 
 Theorem surj_decl :
-  forall (A B : Type) (R : A -> B -> Prop),
-  (forall x' : B, exists x : A, R x x') <->
-  ((R ##> impl) ##> impl) (@all A) (@all B).
+  forall (A B : Type) (R : A -> B -> Type),
+    (forall x' : B, { x : A & R x x'}) ->
+    ((R ##> arrow) ##> arrow) (@all_type A) (@all_type B).
 Proof.
   intros A B R.
   lazy delta zeta.
-  split.
-  + intros Hsurj p p' Hp Hall x'.
-    destruct (Hsurj x') as [x Rx].
-    apply (Hp x _); trivial.
-  + intros Hsurj.
-    apply (Hsurj (fun _ => True) _); trivial.
-    intros x x' Rx _.
-    exists x; trivial.
+  intros Hsurj p p' Hp Hall x'.
+  destruct (Hsurj x') as [x Rx].
+  apply (Hp x _); trivial.
+Qed.
+
+Theorem surj_decl_recip :
+  forall (A B : Type) (R : A -> B -> Type),
+    ((R ##> arrow) ##> arrow) (@all_type A) (@all_type B) ->
+    (forall x' : B, { x : A & R x x'}).
+Proof.
+  intros A B R.
+  lazy delta zeta.
+  intros Hsurj.
+  apply (Hsurj (fun _ => True) _); trivial.
+  intros x x' Rx _.
+  exists x; trivial.
 Qed.
 
 Theorem lefttotal_decl :
-  forall (A B : Type) (R : A -> B -> Prop),
-  (forall x : A, exists x' : B, R x x') <->
-  ((R ##> flip impl) ##> flip impl) (@all A) (@all B).
+  forall (A B : Type) (R : A -> B -> Type),
+    (forall x : A, { x' : B & R x x'}) ->
+    ((R ##> flip arrow) ##> flip arrow) (@all_type A) (@all_type B).
 Proof.
   intros A B R.
   lazy delta zeta.
-  split.
-  + intros Htot p p' Hp Hall x.
-    destruct (Htot x) as [x' Rx].
-    apply (Hp _ x'); trivial.
-  + intros Htot.
-    apply (Htot _ (fun _ => True)); trivial.
-    intros x x' Rx _.
-    exists x'; trivial.
+  intros Htot p p' Hp Hall x.
+  destruct (Htot x) as [x' Rx].
+  apply (Hp _ x'); trivial.
 Qed.
 
-Definition bitotal {A B : Type} (R : A -> B -> Prop) :=
-  ((R ##> iff) ##> iff) (@all A) (@all B).
+Theorem lefttotal_decl_recip :
+  forall (A B : Type) (R : A -> B -> Type),
+    ((R ##> flip arrow) ##> flip arrow) (@all_type A) (@all_type B) ->
+    (forall x : A, { x' : B & R x x'}).
+Proof.
+  intros A B R.
+  lazy delta zeta.
+  intros Htot.
+  apply (Htot _ (fun _ => True)); trivial.
+  intros x x' Rx _.
+  exists x'; trivial.
+Qed.
+
+Definition bitotal {A B : Type} (R : A -> B -> Type) :=
+  ((R ##> iffT) ##> iffT) (@all_type A) (@all_type B).
 
 Theorem bitotal_decl :
-  forall (A B : Type) (R : A -> B -> Prop),
-    (forall x' : B, exists x : A, R x x') /\
-    (forall x : A, exists x' : B, R x x') ->
+  forall (A B : Type) (R : A -> B -> Type),
+    (forall x' : B, { x : A & R x x'}) ->
+    (forall x : A, { x' : B & R x x'}) ->
     bitotal R.
 Proof.
   intros A B R.
   lazy delta zeta.
-  intros [Hsurj Htot] p p' Hp; split; intros Hall.
+  intros Hsurj Htot p p' Hp; split; intros Hall.
   + intro x'.
     destruct (Hsurj x') as [x Rx].
     apply (Hp x _); trivial.
@@ -256,17 +291,22 @@ Qed.
 Then a little bit of work on intersection and union of relations
 and their compatibility with ##> is still needed. *)
 
-Theorem bitotal_decl_recip :
-  forall (A B : Type) (R : A -> B -> Prop),
+Theorem bitotal_decl_recip1 :
+  forall (A B : Type) (R : A -> B -> Type),
     bitotal R ->
-    (forall x' : B, exists x : A, R x x') /\
-    (forall x : A, exists x' : B, R x x').
+    (forall x' : B, { x : A & R x x' }).
 Proof.
-  intros * H; unfold respectful_arrow in H; split.
-  + intros x'.
-    apply (H (fun _ => True) (fun x' => exists x, R x x')); firstorder.
-  + intros x.
-    apply (H (fun x => exists x', R x x') (fun x' => True)); firstorder.
+  intros * H; unfold respectful_arrow in H; intros x'.
+  apply (H (fun _ => True) (fun x' => { x : A & R x x'})); firstorder.
+Qed.
+
+Theorem bitotal_decl_recip2 :
+  forall (A B : Type) (R : A -> B -> Type),
+    bitotal R ->
+    (forall x : A, { x' : B & R x x' }).
+Proof.
+  intros * H; unfold respectful_arrow in H; intros x.
+  apply (H (fun x => { x' : B & R x x'}) (fun x' => True)); firstorder.
 Qed.
 
 Definition ball {A : Type} (subType : A -> Prop) (predicate : A -> Prop) :=
@@ -293,11 +333,11 @@ Proof.
     now exists x.
 Qed.
 
-Definition biunique {A B : Type} (R : A -> B -> Prop) :=
+Definition biunique {A B : Type} (R : A -> B -> Type) :=
   (R ##> R ##> iff) eq eq.
 
 Theorem biunique_decl :
-  forall (A B : Type) (R : A -> B -> Prop),
+  forall (A B : Type) (R : A -> B -> Type),
     (forall x x' y', R x x' -> R x y' -> x' = y') ->
     (forall x y y', R x y' -> R y y' -> x = y) ->
     biunique R.
@@ -310,15 +350,22 @@ Proof.
     now rewrite <- eq.
 Qed.
 
-Theorem biunique_decl_recip :
-  forall (A B : Type) (R : A -> B -> Prop),
+Theorem biunique_decl_recip1 :
+  forall (A B : Type) (R : A -> B -> Type),
     biunique R ->
-    (forall x x' y', R x x' -> R x y' -> x' = y') /\
+    (forall x x' y', R x x' -> R x y' -> x' = y').
+Proof.
+  intros A B R Huniq; lazy beta delta in Huniq; intros * rel1 rel2.
+  generalize (eq_refl x).
+  now apply Huniq.
+Qed.
+
+Theorem biunique_decl_recip2 :
+  forall (A B : Type) (R : A -> B -> Type),
+    biunique R ->
     (forall x y y', R x y' -> R y y' -> x = y).
 Proof.
-  intros A B R Huniq; lazy beta delta in Huniq; split; intros * rel1 rel2.
-  + generalize (eq_refl x).
-    now apply Huniq.
-  + generalize (eq_refl y').
-    now apply Huniq.
+  intros A B R Huniq; lazy beta delta in Huniq; intros * rel1 rel2.
+  generalize (eq_refl y').
+  now apply Huniq.
 Qed.

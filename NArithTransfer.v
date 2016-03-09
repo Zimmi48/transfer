@@ -8,7 +8,7 @@
 Require Export Transfer BinNatDef.
 Require Import Coq.NArith.Nnat.
 
-Definition natN x x' := N.of_nat x = x'.
+Definition natN x x' : Type := N.of_nat x = x'.
 
 Instance natN_nb : forall n : nat, Related natN n (N.of_nat n).
 Proof. reflexivity. Qed.
@@ -19,7 +19,7 @@ Proof. apply N2Nat.id. Qed.
 (* Totality of natN *)
 
 Instance natN_surjective_total :
-  Related ((natN ##> iff) ##> iff) (@all nat) (@all N).
+  Related ((natN ##> iffT) ##> iffT) (@all_type nat) (@all_type N).
 Proof.
   related_basics.
   unfold natN.
@@ -33,16 +33,20 @@ Module N2Nat_transfer.
 
 (* Preliminaries *)
 
-Lemma natN_bis x x' : natN x x' <-> N.to_nat x' = x.
+Lemma natN_bis x x' : natN x x' -> N.to_nat x' = x.
 Proof.
   unfold natN.
-  split.
   intros H.
   rewrite <- H.
-  now apply Nat2N.id.
+  apply Nat2N.id.
+Qed.
+
+Lemma natN_bis_recip x x' : N.to_nat x' = x -> natN x x'.
+Proof.
+  unfold natN.
   intros H.
   rewrite <- H.
-  now apply N2Nat.id.
+  apply N2Nat.id.
 Qed.
 
 Ltac unfold_natN_bis :=
@@ -50,7 +54,7 @@ Ltac unfold_natN_bis :=
   let n := fresh "n" in
   let Hn := fresh "Hn" in
   intros n n' Hn;
-  rewrite natN_bis in Hn;
+  apply natN_bis in Hn;
   rewrite <- Hn;
   clear Hn n.
 
@@ -59,7 +63,7 @@ Import N2Nat.
 Ltac solve thm :=
   related_basics;
   repeat unfold_natN_bis;
-  try (rewrite natN_bis);
+  try (apply natN_bis_recip);
   (apply thm || symmetry ; apply thm).
 
 (* This symmetry is required for some theorem which
@@ -68,7 +72,7 @@ Ltac solve thm :=
 
 (* Rewrite all theorems from N2Nat *)
 
-Instance inj : Related (natN ##> natN ##> impl) eq eq.
+Instance inj : Related (natN ##> natN ##> arrow) eq eq.
 Proof.
   solve inj.
 Qed.
@@ -76,6 +80,18 @@ Qed.
 Instance inj_iff : Related (natN ##> natN ##> iff) eq eq.
 Proof.
   solve inj_iff.
+Qed.
+
+Instance inj_iffT : Related (natN ##> natN ##> iffT) eq eq.
+Proof.
+  split;
+  unfold natN in *.
+  - rewrite <- X.
+    intros -> .
+    assumption.
+  - rewrite <- X0.
+    intros -> .
+    now apply Nat2N.inj.
 Qed.
 
 (* inj_double, inj_succ_double *)
