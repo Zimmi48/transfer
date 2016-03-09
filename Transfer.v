@@ -324,7 +324,7 @@ Proof.
 Qed.
 
 Definition bijective {A B : Type} (R : A -> B -> Prop) := biunique R /\ bitotal R.
-
+(*
 Theorem bitotal_fun :
   forall (A B C D : Type) (R : A -> B -> Prop) (S : C -> D -> Prop),
     bijective R -> bitotal S -> bitotal (R ##> S).
@@ -342,3 +342,4 @@ Proof.
       cut B; [intros x' |].
       specialize (lefttotal_S (f' x')).
       destruct lefttotal_S.
+*)
