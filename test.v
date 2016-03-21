@@ -1,21 +1,24 @@
-Require Import PeanoNat.
-Require Import NArithTransfer.
+Require Import Transfer.Transfer.
+Require Coq.Setoids.Setoid.
+
+Set Universe Polymorphism.
 
 Lemma half_total_predicate :
   forall {A B : Type} (R : A -> B -> Prop),
     (forall (x : A) (x' y' : B), R x x' -> R x y' -> x' = y')
-    -> forall P' : B -> Prop, exists P : A -> Prop, (R ##> iff) P P'.
+    -> forall P' : B -> Type, { P : A -> Type & (R ##> iffT) P P' }.
 Proof.
   intros A B R Hfun P'.
   exists (fun x => forall x', R x x' -> P' x').
 (*  exists (fun x => exists x', R x x' /\ P' x'). *)
   intros; split; firstorder.
-  erewrite Hfun; eauto.
-Qed.  
+Admitted.
+(*   erewrite Hfun; eauto. *)
+(* Qed.   *)
 
 Lemma half_total_predicate_recip :
   forall (A B : Type) (R : A -> B -> Prop),
-    (forall P' : B -> Prop, exists P : A -> Prop, (R ##> iff) P P') ->
+    (forall P' : B -> Prop, { P : A -> Prop & (R ##> iff) P P' }) ->
     (forall (x : A) (x' y' : B), R x x' -> R x y' -> x' = y').
 Proof.
   intros A B R Htot x x' y' relxx relxy.
@@ -29,7 +32,7 @@ Qed.
 
 Lemma half_uniq_predicate :
   forall (A B : Type) (R : A -> B -> Prop),
-    (forall x', exists x, R x x') ->
+    (forall x', { x : A & R x x' }) ->
     forall (P Q : A -> Prop) (P' Q' : B -> Prop),
       (eq ##> iff) P Q -> (R ##> iff) P P' ->
       (R ##> iff) Q Q' -> (eq ##> iff) P' Q'.
@@ -43,11 +46,12 @@ Proof.
 Qed.
 
 Instance half_uniq_predicate_inst (A B : Type) (R : A -> B -> Prop) :
-  (Related ((R ##> iff) ##> iff) (@all A) (@all B)) ->
-  Related ((R ##> iff) ##> (R ##> iff) ##> iff) (eq ##> iff) (eq ##> iff).
+  (Related ((R ##> iffT) ##> iffT) (@all_type A) (@all_type B)) ->
+  Related ((R ##> iff) ##> (R ##> iff) ##> iffT) (eq ##> iff) (eq ##> iff).
 Proof.
   intro.
-  destruct (bitotal_decl_recip _ _ _ is_related) as [ Hsurj Htot ].
+  pose (Hsurj := bitotal_decl_recip1 _ _ _ is_related).
+  pose (Htot := bitotal_decl_recip2 _ _ _ is_related).
   intros P P' relP Q Q' relQ; split.
   + intro relPQ.
     apply (half_uniq_predicate _ _ _ Hsurj P Q P' Q'); trivial.
@@ -74,10 +78,11 @@ Instance total_predicate
   (A B : Type)
   (R : A -> B -> Prop)
   (inst : Related (R ##> R ##> iff) eq eq) :
-  Related (((R ##> iff) ##> iff) ##> iff) (@all (A -> Prop)) (@all (B -> Prop)).
+  Related (((R ##> iffT) ##> iffT) ##> iffT) (@all_type (A -> Type)) (@all_type (B -> Type)).
 Proof.
-  destruct (biunique_decl_recip _ _ _ is_related) as [ Hfun Hinj ].
-  apply bitotal_decl; split.
+  pose (Hfun := biunique_decl_recip1 _ _ _ is_related).
+  pose (Hinj := biunique_decl_recip2 _ _ _ is_related).
+  apply bitotal_decl.
   + exact (half_total_predicate _ Hfun).
   + intros *.
     edestruct (half_total_predicate (flip R)) as (P' & HP'); [ intros; eapply Hinj; eauto |].
@@ -85,9 +90,58 @@ Proof.
     intros; split; apply HP'; assumption.
 Qed.
 
-Theorem N_nat_ind : forall P : N -> Prop, P 0%N -> (forall n : N, P n -> P (N.succ n)) -> forall n : N, P n.
+Require Import PeanoNat.
+Require Import NArithTransfer.
+
+Monomorphic Theorem N_nat_ind : forall P : N -> Type, P 0%N -> (forall n : N, P n -> P (N.succ n)) -> forall n : N, P n.
 Proof.
-  transfer.
+  Typeclasses eauto := debug.
+  Fail exactm nat_ind.
+  enough (H : arrow
+                (forall P : nat -> Type, P 0 -> (forall n : nat, P n -> P (S n)) -> forall n : nat, P n)
+                (forall P : N -> Type, P 0%N -> (forall n : N, P n -> P (N.succ n)) -> forall n : N, P n))
+         by (apply H; exact nat_rect).
+  apply forall_rule.
+  eapply app_rule.
+  eapply subrel_rule.
+  apply sub_respectful_right.
+  exact sub_iffT_arrow.
+  eapply total_predicate.
+  exact N2Nat_transfer.inj_iff.
+  eapply lambda_rule.
+  intros P P' relP.
+  eapply arrow_rule.
+  eapply app_rule.
+  eapply app_rule.
+  exact arrow_transfer_rule.
+  eapply app_rule.
+  eassumption.
+  apply natN_nb.
+  eapply arrow_rule.
+  eapply app_rule.
+  eapply app_rule.
+  exact arrow_transfer_rule.
+  apply forall_rule.
+  eapply app_rule.
+  exact natN_surjective_total.
+  eapply lambda_rule.
+  intros n n' reln.
+  apply arrow_rule.
+  eapply app_rule.
+  eapply app_rule.
+  exact arrow_transfer_rule.  
+  refine _.
+  eapply app_rule.
+  eassumption.
+  eapply app_rule.
+  exact N2Nat_transfer.inj_succ.
+  eassumption.
+  refine _.
+Qed.
+Set Printing Universes.
+Print N_nat_ind.
+
+  Fail transfer.
   exact nat_ind.
 (*   exactm nat_ind. *)
 Qed.

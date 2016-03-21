@@ -8,6 +8,8 @@
 Require Export Transfer BinNatDef.
 Require Import Coq.NArith.Nnat.
 
+Set Universe Polymorphism.
+
 Definition natN x x' : Type := N.of_nat x = x'.
 
 Instance natN_nb : forall n : nat, Related natN n (N.of_nat n).

@@ -7,6 +7,14 @@
 
 Require Export Coq.Program.Basics Coq.Classes.CMorphisms.
 
+Set Universe Polymorphism.
+
+Inductive prodP (A : Type) (B : Type) :=
+  pairP : A -> B -> prodP A B.
+
+Definition iffT (A : Type) (B : Type) :=
+  prodP (arrow A B) (arrow B A).
+
 Definition respectful_arrow
   {A B C D: Type}
   (R : A -> B -> Type) (R' : C -> D -> Type)
@@ -88,9 +96,9 @@ Instance app_rule
 (* ARROW *)
 
 Instance arrow_rule
-  (R : Prop -> Prop -> Prop)
-  (t1 t2 t1' t2' : Prop)
-  (inst : Related R (impl t1 t2) (impl t1' t2')) :
+         (R : Type -> Type -> Type)
+         (t1 t2 t1' t2' : Type)
+         (inst : Related R (arrow t1 t2) (arrow t1' t2')) :
   Related R (t1 -> t2) (t1' -> t2') | 2 := inst.
 
 (* FORALL *)
@@ -112,9 +120,6 @@ Instance sub_iffT_arrow : HeteroSubrel iffT arrow.
 Proof. firstorder. Qed.
 
 Instance sub_iffT_flip_arrow : HeteroSubrel iffT (flip arrow).
-Proof. firstorder. Qed.
-
-Instance sub_iffT_iff : HeteroSubrel iff iffT.
 Proof. firstorder. Qed.
 
 Instance sub_respectful_left
@@ -159,9 +164,18 @@ Proof.
   related_tauto.
 Qed.
 
-Instance impl_rule : Related (iff ##> iff ##> iff) impl impl.
+Unset Strict Universe Declaration.
+
+Instance arrow_transfer_rule
+                             : Related (iffT ##> iffT ##> iffT) arrow arrow.
 Proof.
-  related_tauto.
+  intros e e' [e1 e2] e0 e'0 [e3 e4].
+  reduce.
+  split.
+  intros f et.
+  apply (e3 (f (e2 et))).
+  intros f et.
+  apply (e4 (f (e1 et))).
 Qed.
 
 Instance iff_rule : Related (iff ##> iff ##> iffT) iff iff.
