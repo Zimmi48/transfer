@@ -4,9 +4,21 @@ Require Coq.Setoids.Setoid.
 Set Universe Polymorphism.
 
 Lemma half_total_predicate :
-  forall {A B : Type} (R : A -> B -> Prop),
+  forall {A B : Type} (R : A -> B -> Type),
     (forall (x : A) (x' y' : B), R x x' -> R x y' -> x' = y')
     -> forall P' : B -> Type, { P : A -> Type & (R ##> iffT) P P' }.
+Proof.
+  intros A B R Hfun P'.
+  exists (fun x => forall x', R x x' -> P' x').
+(*  exists (fun x => { x' : B & prodP (R x x') (P' x') }). *)
+  split; unfold arrow; firstorder.
+  erewrite Hfun; eauto.
+Qed.
+
+Lemma half_total_predicate_prop :
+  forall {A B : Type} (R : A -> B -> Prop),
+    (forall (x : A) (x' y' : B), R x x' -> R x y' -> x' = y')
+    -> forall P' : B -> Prop, { P : A -> Prop & (R ##> iff) P P' }.
 Proof.
   intros A B R Hfun P'.
   exists (fun x => forall x', R x x' -> P' x').
@@ -75,16 +87,34 @@ Abort.
 
 Instance total_predicate
   (A B : Type)
-  (R : A -> B -> Prop)
-  (inst : Related (R ##> R ##> iff) eq eq) :
+  (R : A -> B -> Type)
+  (inst : Related (R ##> R ##> iffT) eq eq) :
   Related (((R ##> iffT) ##> iffT) ##> iffT) (@all_type (A -> Type)) (@all_type (B -> Type)).
 Proof.
+  pose (is_related := is_related).
   pose (Hfun := biunique_decl_recip1 _ _ _ is_related).
   pose (Hinj := biunique_decl_recip2 _ _ _ is_related).
   apply bitotal_decl.
-  + exact (half_total_predicate _ Hfun).
+  + exact (half_total_predicate R Hfun).
   + intros *.
     edestruct (half_total_predicate (flip R)) as (P' & HP'); [ intros; eapply Hinj; eauto |].
+    exists P'.
+    intros; split; apply HP'; assumption.
+Qed.
+
+Instance total_predicate_prop
+  (A B : Type)
+  (R : A -> B -> Prop)
+  (inst : Related (R ##> R ##> iffT) eq eq) :
+  Related (((R ##> iff) ##> iffT) ##> iffT) (@all_type (A -> Prop)) (@all_type (B -> Prop)).
+Proof.
+  pose (is_related := is_related).
+  pose (Hfun := biunique_decl_recip1 _ _ _ is_related).
+  pose (Hinj := biunique_decl_recip2 _ _ _ is_related).
+  apply bitotal_decl.
+  + exact (half_total_predicate_prop R Hfun).
+  + intros *.
+    edestruct (half_total_predicate_prop (flip R)) as (P' & HP'); [ intros; eapply Hinj; eauto |].
     exists P'.
     intros; split; apply HP'; assumption.
 Qed.
@@ -92,24 +122,37 @@ Qed.
 Require Import Coq.Arith.PeanoNat.
 Require Import Transfer.NArithTransfer.
 
-Theorem N_nat_ind : forall P : N -> Type, P 0%N -> (forall n : N, P n -> P (N.succ n)) -> forall n : N, P n.
+Theorem N_nat_rect : forall P : N -> Type, P 0%N -> (forall n : N, P n -> P (N.succ n)) -> forall n : N, P n.
+Proof.
+(* exactm nat_rect. *)
+  transfer.
+  exact nat_rect.
+Qed.
+
+Theorem N_nat_ind : forall P : N -> Prop, P 0%N -> (forall n : N, P n -> P (N.succ n)) -> forall n : N, P n.
 Proof.
   Typeclasses eauto := debug.
-(*  Fail exactm nat_ind. *)
-(*  Fail (transfer; exact nat_ind). *)
   enough (H : Related arrow
-                (forall P : nat -> Type, P 0 -> (forall n : nat, P n -> P (S n)) -> forall n : nat, P n)
-                (forall P : N -> Type, P 0%N -> (forall n : N, P n -> P (N.succ n)) -> forall n : N, P n))
-         by (apply H; exact nat_rect).
+                (forall P : nat -> Prop, P 0 -> (forall n : nat, P n -> P (S n)) -> forall n : nat, P n)
+                (forall P : N -> Prop, P 0%N -> (forall n : N, P n -> P (N.succ n)) -> forall n : N, P n))
+    by (apply H; exact nat_ind).
   apply forall_rule.
-  eapply app_rule. {
-    eapply subrel_rule; [ refine _ |].
-    apply total_predicate.
-    refine _.
-    Check N2Nat_transfer.inj_iff.
-    exact N2Nat_transfer.inj_iff.
-  }
+  eapply app_rule. (* (app_rule _ _ _ _ ((natN ##> iff) ##> iffT)). *)
+  eapply subrel_rule.
+  apply sub_respectful_right.
+  exact sub_iffT_arrow.
+  apply total_predicate_prop.
+  exact N2Nat_transfer.inj_iffT.
+  apply lambda_rule.
+  intros P P' relP.
+  apply arrow_rule.
+  eapply app_rule.
+  eapply app_rule.
+  exact arrow_transfer_rule.
+  eapply app_rule.
   refine _.
+  eapply app_rule.
+  
 Qed.
 
 (*

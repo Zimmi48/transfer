@@ -342,7 +342,7 @@ Proof.
 Qed.
 
 Definition biunique {A B : Type} (R : A -> B -> Type) :=
-  (R ##> R ##> iff) eq eq.
+  (R ##> R ##> iffT) eq eq.
 
 Theorem biunique_decl :
   forall (A B : Type) (R : A -> B -> Type),
