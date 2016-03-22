@@ -10,11 +10,10 @@ Lemma half_total_predicate :
 Proof.
   intros A B R Hfun P'.
   exists (fun x => forall x', R x x' -> P' x').
-(*  exists (fun x => exists x', R x x' /\ P' x'). *)
-  intros; split; firstorder.
-Admitted.
-(*   erewrite Hfun; eauto. *)
-(* Qed.   *)
+(*  exists (fun x => { x' : B & prodP (R x x') (P' x') }). *)
+  split; unfold arrow; firstorder.
+  erewrite Hfun; eauto.
+Qed.
 
 Lemma half_total_predicate_recip :
   forall (A B : Type) (R : A -> B -> Prop),
@@ -90,61 +89,33 @@ Proof.
     intros; split; apply HP'; assumption.
 Qed.
 
-Require Import PeanoNat.
-Require Import NArithTransfer.
+Require Import Coq.Arith.PeanoNat.
+Require Import Transfer.NArithTransfer.
 
-Monomorphic Theorem N_nat_ind : forall P : N -> Type, P 0%N -> (forall n : N, P n -> P (N.succ n)) -> forall n : N, P n.
+Theorem N_nat_ind : forall P : N -> Type, P 0%N -> (forall n : N, P n -> P (N.succ n)) -> forall n : N, P n.
 Proof.
   Typeclasses eauto := debug.
-  Fail exactm nat_ind.
-  enough (H : arrow
+(*  Fail exactm nat_ind. *)
+(*  Fail (transfer; exact nat_ind). *)
+  enough (H : Related arrow
                 (forall P : nat -> Type, P 0 -> (forall n : nat, P n -> P (S n)) -> forall n : nat, P n)
                 (forall P : N -> Type, P 0%N -> (forall n : N, P n -> P (N.succ n)) -> forall n : N, P n))
          by (apply H; exact nat_rect).
   apply forall_rule.
-  eapply app_rule.
-  eapply subrel_rule.
-  apply sub_respectful_right.
-  exact sub_iffT_arrow.
-  eapply total_predicate.
-  exact N2Nat_transfer.inj_iff.
-  eapply lambda_rule.
-  intros P P' relP.
-  eapply arrow_rule.
-  eapply app_rule.
-  eapply app_rule.
-  exact arrow_transfer_rule.
-  eapply app_rule.
-  eassumption.
-  apply natN_nb.
-  eapply arrow_rule.
-  eapply app_rule.
-  eapply app_rule.
-  exact arrow_transfer_rule.
-  apply forall_rule.
-  eapply app_rule.
-  exact natN_surjective_total.
-  eapply lambda_rule.
-  intros n n' reln.
-  apply arrow_rule.
-  eapply app_rule.
-  eapply app_rule.
-  exact arrow_transfer_rule.  
-  refine _.
-  eapply app_rule.
-  eassumption.
-  eapply app_rule.
-  exact N2Nat_transfer.inj_succ.
-  eassumption.
+  eapply app_rule. {
+    eapply subrel_rule; [ refine _ |].
+    apply total_predicate.
+    refine _.
+    Check N2Nat_transfer.inj_iff.
+    exact N2Nat_transfer.inj_iff.
+  }
   refine _.
 Qed.
+
+(*
 Set Printing Universes.
 Print N_nat_ind.
-
-  Fail transfer.
-  exact nat_ind.
-(*   exactm nat_ind. *)
-Qed.
+*)
 
 Theorem ex2 : forall n : nat, n = n.
 Proof.

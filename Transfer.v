@@ -9,12 +9,6 @@ Require Export Coq.Program.Basics Coq.Classes.CMorphisms.
 
 Set Universe Polymorphism.
 
-Inductive prodP (A : Type) (B : Type) :=
-  pairP : A -> B -> prodP A B.
-
-Definition iffT (A : Type) (B : Type) :=
-  prodP (arrow A B) (arrow B A).
-
 Definition respectful_arrow
   {A B C D: Type}
   (R : A -> B -> Type) (R' : C -> D -> Type)
@@ -104,7 +98,7 @@ Instance arrow_rule
 (* FORALL *)
 
 Definition all_type {A : Type} (P : A -> Type) := forall x : A, P x.
-Typeclasses Opaque all_type.
+Typeclasses Opaque all_type arrow.
 
 Instance forall_rule
   (R : Type -> Type -> Type)
