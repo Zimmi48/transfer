@@ -5,18 +5,7 @@
  * http://mozilla.org/MPL/2.0/.
  *)
 
-Require Export Coq.Program.Basics Coq.Classes.CMorphisms.
-
-Set Universe Polymorphism.
-
-Definition respectful_arrow
-  {A B C D: Type}
-  (R : A -> B -> Type) (R' : C -> D -> Type)
-  (f : A -> C) (f' : B -> D) : Type :=
-  forall e e', R e e' -> R' (f e) (f' e').
-
-Notation " R ##> R' " := (respectful_arrow R R')
-  (right associativity, at level 55) : type_scope.
+Require Export Transfer.StandardInstances.
 
 Class Related
   (A B : Type) (R : A -> B -> Type) (t : A) (t' : B) : Prop :=
@@ -144,8 +133,7 @@ Ltac related_tauto :=
   tauto.
 
 (* Having the following instance allows transferring many
-   more theorems but prevent using "apply modulo" in the
-   same way as Isabelle transfer' tactic. *)
+   more theorems but prevents using the transfer and applym tactics. *)
 (*
 Instance impl_reflexivity : forall (A : Prop), Related impl A A.
 Proof.
@@ -158,36 +146,19 @@ Proof.
   related_tauto.
 Qed.
 
-Unset Strict Universe Declaration.
-
-Instance arrow_transfer_rule
-                             : Related (iffT ##> iffT ##> iffT) arrow arrow.
-Proof.
-  intros e e' [e1 e2] e0 e'0 [e3 e4].
-  reduce.
-  split.
-  intros f et.
-  apply (e3 (f (e2 et))).
-  intros f et.
-  apply (e4 (f (e1 et))).
-Qed.
+Instance arrow_transfer_rule : Related (iffT ##> iffT ##> iffT) arrow arrow.
+Proof arrow_arrow.
 
 Instance iff_rule : Related (iff ##> iff ##> iffT) iff iff.
-Proof.
-  firstorder.
-Qed.
+Proof iff_iff.
 
 Instance and_rule :
-  Related (iff ##> iff ##> iff) and and.
-Proof.
-  related_tauto.
-Qed.
+  Related (iff ##> iff ##> iffT) and and.
+Proof and_and.
 
 Instance or_rule :
-  Related (iff ##> iff ##> iff) or or.
-Proof.
-  related_tauto.
-Qed.
+  Related (iff ##> iff ##> iffT) or or.
+Proof or_or.
 
 Instance eq_rule :
   forall (A : Type),
@@ -204,176 +175,8 @@ Qed.
 Instance eq_rule' :
   forall (A : Type),
   Related (eq ##> eq ##> iffT) (@eq A) (@eq A).
-Proof.
-  related_basics.
-  intros x x' Hx y y' Hy; split; intro Heq.
-  + rewrite <- Hx, <- Hy.
-    assumption.
-  + rewrite Hx, Hy.
-    assumption.
-Qed.
+Proof eq_eq.
 
 Instance eq_reflexivity :
   forall (A : Set) (x : A), Related eq x x.
 Proof. reflexivity. Qed.
-
-(* How to declare surjectivity of a relation *)
-
-Theorem surj_decl :
-  forall (A B : Type) (R : A -> B -> Type),
-    (forall x' : B, { x : A & R x x'}) ->
-    ((R ##> arrow) ##> arrow) (@all_type A) (@all_type B).
-Proof.
-  intros A B R.
-  lazy delta zeta.
-  intros Hsurj p p' Hp Hall x'.
-  destruct (Hsurj x') as [x Rx].
-  apply (Hp x _); trivial.
-Qed.
-
-Theorem surj_decl_recip :
-  forall (A B : Type) (R : A -> B -> Type),
-    ((R ##> arrow) ##> arrow) (@all_type A) (@all_type B) ->
-    (forall x' : B, { x : A & R x x'}).
-Proof.
-  intros A B R.
-  lazy delta zeta.
-  intros Hsurj.
-  apply (Hsurj (fun _ => True) _); trivial.
-  intros x x' Rx _.
-  exists x; trivial.
-Qed.
-
-Theorem lefttotal_decl :
-  forall (A B : Type) (R : A -> B -> Type),
-    (forall x : A, { x' : B & R x x'}) ->
-    ((R ##> flip arrow) ##> flip arrow) (@all_type A) (@all_type B).
-Proof.
-  intros A B R.
-  lazy delta zeta.
-  intros Htot p p' Hp Hall x.
-  destruct (Htot x) as [x' Rx].
-  apply (Hp _ x'); trivial.
-Qed.
-
-Theorem lefttotal_decl_recip :
-  forall (A B : Type) (R : A -> B -> Type),
-    ((R ##> flip arrow) ##> flip arrow) (@all_type A) (@all_type B) ->
-    (forall x : A, { x' : B & R x x'}).
-Proof.
-  intros A B R.
-  lazy delta zeta.
-  intros Htot.
-  apply (Htot _ (fun _ => True)); trivial.
-  intros x x' Rx _.
-  exists x'; trivial.
-Qed.
-
-Definition bitotal {A B : Type} (R : A -> B -> Type) :=
-  ((R ##> iffT) ##> iffT) (@all_type A) (@all_type B).
-
-Theorem bitotal_decl :
-  forall (A B : Type) (R : A -> B -> Type),
-    (forall x' : B, { x : A & R x x'}) ->
-    (forall x : A, { x' : B & R x x'}) ->
-    bitotal R.
-Proof.
-  intros A B R.
-  lazy delta zeta.
-  intros Hsurj Htot p p' Hp; split; intros Hall.
-  + intro x'.
-    destruct (Hsurj x') as [x Rx].
-    apply (Hp x _); trivial.
-  + intro x.
-    destruct (Htot x) as [x' Rx].
-    apply (Hp _ x'); trivial.
-Qed.
-
-(* other approach:
-  intros A B R [Hsurj Htot].
-  apply surj_decl in Hsurj.
-  apply tot_decl in Htot.
-  apply is_heteroSubrel in Hsurj.
-  apply is_heteroSubrel in Htot.
-
-Then a little bit of work on intersection and union of relations
-and their compatibility with ##> is still needed. *)
-
-Theorem bitotal_decl_recip1 :
-  forall (A B : Type) (R : A -> B -> Type),
-    bitotal R ->
-    (forall x' : B, { x : A & R x x' }).
-Proof.
-  intros * H; unfold respectful_arrow in H; intros x'.
-  apply (H (fun _ => True) (fun x' => { x : A & R x x'})); firstorder.
-Qed.
-
-Theorem bitotal_decl_recip2 :
-  forall (A B : Type) (R : A -> B -> Type),
-    bitotal R ->
-    (forall x : A, { x' : B & R x x' }).
-Proof.
-  intros * H; unfold respectful_arrow in H; intros x.
-  apply (H (fun x => { x' : B & R x x'}) (fun x' => True)); firstorder.
-Qed.
-
-Definition ball {A : Type} (subType : A -> Prop) (predicate : A -> Prop) :=
-  forall x, subType x -> predicate x.
-
-Theorem generic_covered_decl :
-  forall (A B : Type) (R : A -> B -> Prop),
-    let coveredA := fun x => exists y, R x y in
-    let coveredB := fun y => exists x, R x y in
-    ((R ##> iff) ##> iff) (ball coveredA) (ball coveredB).
-Proof.
-  intros A B R coveredA coveredB.
-  lazy beta delta.
-  intros P P' Prel; split.
-  + intros HP x' (x & xrel).
-    destruct (Prel x x' xrel) as [Prel' _].
-    apply Prel'.
-    apply HP.
-    now exists x'.
-  + intros HP' x (x' & xrel).
-    destruct (Prel x x' xrel) as [_ Prel'].
-    apply Prel'.
-    apply HP'.
-    now exists x.
-Qed.
-
-Definition biunique {A B : Type} (R : A -> B -> Type) :=
-  (R ##> R ##> iffT) eq eq.
-
-Theorem biunique_decl :
-  forall (A B : Type) (R : A -> B -> Type),
-    (forall x x' y', R x x' -> R x y' -> x' = y') ->
-    (forall x y y', R x y' -> R y y' -> x = y) ->
-    biunique R.
-Proof.
-  intros A B R Hfun Hinj x x' relx y y' rely.
-  split; intro eq.
-  + apply (Hfun x); trivial.
-    now rewrite eq.
-  + apply (Hinj x y y'); trivial.
-    now rewrite <- eq.
-Qed.
-
-Theorem biunique_decl_recip1 :
-  forall (A B : Type) (R : A -> B -> Type),
-    biunique R ->
-    (forall x x' y', R x x' -> R x y' -> x' = y').
-Proof.
-  intros A B R Huniq; lazy beta delta in Huniq; intros * rel1 rel2.
-  generalize (eq_refl x).
-  now apply Huniq.
-Qed.
-
-Theorem biunique_decl_recip2 :
-  forall (A B : Type) (R : A -> B -> Type),
-    biunique R ->
-    (forall x y y', R x y' -> R y y' -> x = y).
-Proof.
-  intros A B R Huniq; lazy beta delta in Huniq; intros * rel1 rel2.
-  generalize (eq_refl y').
-  now apply Huniq.
-Qed.

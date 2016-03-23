@@ -1,4 +1,6 @@
 -R . Transfer
+Respectful.v
+StandardInstances.v
 Transfer.v
 NArithTransfer.v
 NArithTests.v
