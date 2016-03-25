@@ -113,7 +113,7 @@ Module TransferProp (E:InfDecType)(Fin:WSetsOn E).
     reflexivity.
   Qed.
 
-  Instance surjectivity : Related ((SetNat ##> iffT) ##> iffT) all_type all_type.
+  Instance surjectivity : Related ((SetNat ##> iffT) ##> iffT) forall_def forall_def.
   Proof.
     apply bitotal_decl.
     - intros n.

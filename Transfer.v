@@ -7,6 +7,9 @@
 
 Require Export Transfer.StandardInstances.
 
+Typeclasses Opaque forall_def arrow.
+(** universe-polymorphic forall_def and arrow are not declared as opaque in the library *)
+
 Class Related
   (A B : Type) (R : A -> B -> Type) (t : A) (t' : B) : Prop :=
   is_related : R t t'.
@@ -86,13 +89,10 @@ Instance arrow_rule
 
 (* FORALL *)
 
-Definition all_type {A : Type} (P : A -> Type) := forall x : A, P x.
-Typeclasses Opaque all_type arrow.
-
 Instance forall_rule
   (R : Type -> Type -> Type)
   (t1 t1' : Type) (t2 : t1 -> Type) (t2' : t1' -> Type)
-  (inst : Related R (all_type (fun x : t1 => t2 x)) (all_type (fun x' : t1' => t2' x'))) :
+  (inst : Related R (forall_def (fun x : t1 => t2 x)) (forall_def (fun x' : t1' => t2' x'))) :
   Related R (forall x : t1, t2 x) (forall x' : t1', t2' x') | 3 := inst.
 
 (* Check modulo. launches an infinite loop *)
@@ -125,7 +125,7 @@ Ltac related_basics :=
   unfold respectful_arrow;
   unfold arrow;
   unfold impl;
-  unfold all_type;
+  unfold forall_def;
   unfold flip.
 
 Ltac related_tauto :=
@@ -180,3 +180,13 @@ Proof eq_eq.
 Instance eq_reflexivity :
   forall (A : Set) (x : A), Related eq x x.
 Proof. reflexivity. Qed.
+
+Instance total_predicate_rule
+  (A B : Type)
+  (R : A -> B -> Type)
+  (inst : Related (R ##> R ##> iffT) eq eq) :
+  Related (((R ##> iffT) ##> iffT) ##> iffT) (@forall_def (A -> Type)) (@forall_def (B -> Type)).
+Proof.
+  unfold Related in *.
+  now apply total_predicate.
+Qed.

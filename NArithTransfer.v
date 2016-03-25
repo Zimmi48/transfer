@@ -5,10 +5,8 @@
  * http://mozilla.org/MPL/2.0/.
  *)
 
-Require Export Transfer BinNatDef.
+Require Export Transfer.Transfer Coq.NArith.BinNatDef.
 Require Import Coq.NArith.Nnat.
-
-Set Universe Polymorphism.
 
 Definition natN x x' : Type := N.of_nat x = x'.
 
@@ -21,7 +19,7 @@ Proof. apply N2Nat.id. Qed.
 (* Totality of natN *)
 
 Instance natN_surjective_total :
-  Related ((natN ##> iffT) ##> iffT) (@all_type nat) (@all_type N).
+  Related ((natN ##> iffT) ##> iffT) (@forall_def nat) (@forall_def N).
 Proof.
   related_basics.
   unfold natN.
