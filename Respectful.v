@@ -20,29 +20,22 @@ Notation " R ##> R' " := (respectful_arrow R R')
 
 (* How to declare surjectivity of a relation *)
 
+Local Notation " A <-> B " := (iffT A B) : type_scope.
+
 Theorem surj_decl :
   forall (A B : Type) (R : A -> B -> Type),
-    (forall x' : B, { x : A & R x x'}) ->
+    (forall x' : B, { x : A & R x x'}) <->
     ((R ##> arrow) ##> arrow) (@forall_def A) (@forall_def B).
 Proof.
   intros A B R.
   lazy delta zeta.
-  intros Hsurj p p' Hp Hall x'.
-  destruct (Hsurj x') as [x Rx].
-  apply (Hp x _); trivial.
-Qed.
-
-Theorem surj_decl_recip :
-  forall (A B : Type) (R : A -> B -> Type),
-    ((R ##> arrow) ##> arrow) (@forall_def A) (@forall_def B) ->
-    (forall x' : B, { x : A & R x x'}).
-Proof.
-  intros A B R.
-  lazy delta zeta.
-  intros Hsurj.
-  apply (Hsurj (fun _ => True) _); trivial.
-  intros x x' Rx _.
-  exists x; trivial.
+  split; intros Hsurj.
+  - intros p p' Hp Hall x'.
+    destruct (Hsurj x') as [x Rx].
+    now apply (Hp x _).
+  - apply (Hsurj (fun _ => True) _); trivial.
+    intros x x' Rx _.
+    now exists x.
 Qed.
 
 Theorem lefttotal_decl :

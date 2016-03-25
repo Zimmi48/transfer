@@ -1,14 +1,5 @@
-Require Import Transfer.Transfer.
-
 Require Import Coq.Arith.PeanoNat.
 Require Import Transfer.NArithTransfer.
-
-Theorem N_nat_rect : forall P : N -> Type, P 0%N -> (forall n : N, P n -> P (N.succ n)) -> forall n : N, P n.
-Proof.
-(* exactm nat_rect. *)
-  transfer.
-  exact nat_rect.
-Qed.
 
 Theorem N_nat_ind : forall P : N -> Prop, P 0%N -> (forall n : N, P n -> P (N.succ n)) -> forall n : N, P n.
 Proof.
@@ -19,17 +10,12 @@ Proof.
     by (apply H; exact nat_ind).
   apply forall_rule.
   eapply app_rule. (* (app_rule _ _ _ _ ((natN ##> iff) ##> iffT)). *)
-  eapply subrel_rule.
-  apply sub_respectful_right.
-  exact sub_iffT_arrow.
+  eapply subrel_rule; [ apply sub_respectful_right; exact sub_iffT_arrow |].
   apply total_predicate_prop.
   exact N2Nat_transfer.inj_iffT.
-  apply lambda_rule.
-  intros P P' relP.
+  apply lambda_rule; intros P P' relP.
   apply arrow_rule.
-  eapply app_rule.
-  eapply app_rule.
-  exact arrow_transfer_rule.
+  eapply app_rule; [ eapply app_rule; [ exact arrow_transfer_rule |] |].
   eapply app_rule.
   refine _.
   eapply app_rule.
