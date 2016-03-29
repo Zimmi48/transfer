@@ -134,7 +134,7 @@ Section Declarations.
       now exists x.
   Qed.
 
-  (** ** Uniqueness declarations *)
+  (** * Uniqueness declarations *)
 
   (** Functionality, i.e. right-uniqueness *)
   Definition rightunique := (R ##> R ##> arrow) eq eq.
@@ -285,45 +285,45 @@ Section PredicateDeclarations.
         exact bitotal.
   Qed.
 
-  Lemma half_uniq_predicate :
-    (forall x', { x : A & R x x' }) ->
-    forall (P Q : A -> Type) (P' Q' : B -> Type),
-      (eq ##> iffT) P Q -> (R ##> iffT) P P' ->
-      (R ##> iffT) Q Q' -> (eq ##> iffT) P' Q'.
+  Lemma rightunique_predicate :
+    righttotal R ->
+    ((R ##> iffT) ##> (R ##> iffT) ##> arrow) (eq ##> iffT) (eq ##> iffT).
   Proof.
-    intros H P Q P' Q' H0 H1 H2 x' y' <-.
-    destruct (H x') as (x & Hx).
+    intros righttotal P P' relP Q Q' relQ H x' * <-.
+    assert ({ x : A & R x x' }) as (x & Hx)
+        by now apply righttotal_decl.
     pose proof Hx as Hx2.
-    specialize (H0 x x eq_refl).
-    apply H1 in Hx.
-    apply H2 in Hx2.
+    specialize (H x x eq_refl).
+    apply relP in Hx.
+    apply relQ in Hx2.
     firstorder.
   Qed.
 
-End PredicateDeclarations.
+  Lemma leftunique_predicate :
+    lefttotal R ->
+    ((R ##> iffT) ##> (R ##> iffT) ##> flip arrow) (eq ##> iffT) (eq ##> iffT).
+  Proof.
+    intros lefttotal P P' relP Q Q' relQ H x * <-.
+    assert ({ x' : B & R x x' }) as (x' & Hx')
+        by now apply lefttotal_decl.
+    pose proof Hx' as Hx'2.
+    specialize (H x' x' eq_refl).
+    apply relP in Hx'.
+    apply relQ in Hx'2.
+    firstorder.
+  Qed.
 
-Section PredicateDeclarations'.
-
-  Variables A B : Type.
-  Variable R : A -> B -> Type.
-  
-  Lemma unique_predicate :
+  Lemma biunique_predicate :
     bitotal R ->
     ((R ##> iffT) ##> (R ##> iffT) ##> iffT) (eq ##> iffT) (eq ##> iffT).
   Proof.
     intro bitotal.
-    pose (Hsurj := bitotal_decl_recip1 bitotal).
-    pose (Htot := bitotal_decl_recip2 bitotal).
-    intros P P' relP Q Q' relQ; split.
-    + intro relPQ.
-      apply (@half_uniq_predicate _ _ _ Hsurj P Q P' Q'); trivial.
-    + intro relPQ.
-      apply (@half_uniq_predicate _ _ _ Htot P' Q' P Q); trivial; intros x' x relx. {
-        symmetry.
-        now apply relP.
-      }
-      apply relQ in relx.
-      now rewrite relx.
+    pose (righttotal := righttotal_from_bitotal bitotal).
+    pose (lefttotal := lefttotal_from_bitotal bitotal).
+    intros P P' relP Q Q' relQ; split;
+      [ apply (rightunique_predicate righttotal relP relQ)
+      | apply (leftunique_predicate lefttotal relP relQ) ];
+      assumption.
   Qed.
-
-End PredicateDeclarations'.
+    
+End PredicateDeclarations.
