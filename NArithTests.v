@@ -12,20 +12,6 @@ Require Import NArithTransfer.
 
 Lemma pred_succ : forall n, N.pred (N.succ n) = n.
 Proof.
-  enough (H: impl (forall n : nat, Nat.pred (S n) = n) (forall n : N, N.pred (N.succ n) = n))
-    by (apply H; exact Nat.pred_succ).
-  eapply forall_rule.
-  eapply app_rule.
-  Check lambda_rule.
-  eapply lambda_rule.
-  intro; intro; intro.
-  eapply forall_rule.
-  eapply app_rule;
-    [ eapply lambda_rule;
-      intro; intro; intro;
-      eapply forall_rule;
-      clear H x x'; rename H0 into H; rename x0 into x; rename x'0 into x' |].
-  (* infinite loop *)
   exactm Nat.pred_succ.
 Qed.
 
