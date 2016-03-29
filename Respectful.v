@@ -61,14 +61,11 @@ Section Declarations.
       now exists x'.
   Qed.
 
-  Lemma bitotal_from_left_and_right_total : righttotal -> lefttotal -> bitotal.
+  Lemma bitotal_from_right_and_left_total : righttotal -> lefttotal -> bitotal.
   Proof.
     lazy beta delta.
-    intros H1 H2 P P' H3.
-    split.
-    1:apply H1.
-    2:apply H2.
-    all:apply H3.
+    intros H1 H2 P P' relP.
+    split; [ apply H1 | apply H2 ]; apply relP.
   Qed.
 
   (* The proof could maybe be made more generic with a little bit of work on
@@ -82,13 +79,13 @@ Section Declarations.
     intros righttotal lefttotal.
     apply righttotal_decl in righttotal.
     apply lefttotal_decl in lefttotal.
-    now apply bitotal_from_left_and_right_total.
+    now apply bitotal_from_right_and_left_total.
   Qed.
 
   Lemma bitotal_decl_recip1 : bitotal -> (forall x' : B, { x : A & R x x' }).
   Proof.
-    intros * H; unfold respectful_arrow in H; intros x'.
-    apply (H (fun _ => True) (fun x' => { x : A & R x x'})); firstorder.
+    intro bitotal.
+    apply (bitotal (fun _ => True) (fun x' => { x : A & R x x'})); firstorder.
   Qed.
 
   Lemma righttotal_from_bitotal : bitotal -> righttotal.
@@ -101,8 +98,8 @@ Section Declarations.
 
   Lemma bitotal_decl_recip2 : bitotal -> (forall x : A, { x' : B & R x x' }).
   Proof.
-    intros * H; unfold respectful_arrow in H; intros x.
-    apply (H (fun x => { x' : B & R x x'}) (fun x' => True)); firstorder.
+    intro bitotal.
+    apply (bitotal (fun x => { x' : B & R x x'}) (fun x' => True)); firstorder.
   Qed.
 
   Lemma lefttotal_from_bitotal : bitotal -> lefttotal.
@@ -137,40 +134,91 @@ Section Declarations.
       now exists x.
   Qed.
 
+  (** ** Uniqueness declarations *)
+
+  (** Functionality, i.e. right-uniqueness *)
   Definition rightunique := (R ##> R ##> arrow) eq eq.
+
+  (** Injectivity, i.e. left-uniqueness *)
+  Definition leftunique := (R ##> R ##> flip arrow) eq eq.
+
+  (** Both right and left-unique *)
   Definition biunique := (R ##> R ##> iffT) eq eq.
 
+  Theorem rightunique_decl :
+    (forall x x' y', R x x' -> R x y' -> x' = y') <-> rightunique.
+  Proof.
+    split.
+    - intros functional x x' relx y y' rely eq.
+      apply (functional x); trivial.
+      now rewrite eq.
+    - intros rightunique x **.
+      generalize (eq_refl x).
+      now apply rightunique.
+  Qed.
+
+  Theorem leftunique_decl :
+    (forall x y y', R x y' -> R y y' -> x = y) <-> leftunique.
+  Proof.
+    split.
+    - intros injective x x' relx y y' rely eq.
+      apply (injective x y y'); trivial.
+      now rewrite <- eq.
+    - intros leftunique x y y' **.
+      generalize (eq_refl y').
+      now apply leftunique.
+  Qed.
+
+  Lemma biunique_from_right_and_left_unique : rightunique -> leftunique -> biunique.
+  Proof.
+    lazy beta delta.
+    intros H1 H2 **.
+    split; [ apply H1 | apply H2 ]; assumption.
+  Qed.    
+  
   Theorem biunique_decl :
     (forall x x' y', R x x' -> R x y' -> x' = y') ->
     (forall x y y', R x y' -> R y y' -> x = y) ->
     biunique.
   Proof.
-    intros Hfun Hinj x x' relx y y' rely.
-    split; intro eq.
-    + apply (Hfun x); trivial.
-      now rewrite eq.
-    + apply (Hinj x y y'); trivial.
-      now rewrite <- eq.
+    intros rightunique leftunique.
+    apply rightunique_decl in rightunique.
+    apply leftunique_decl in leftunique.
+    now apply biunique_from_right_and_left_unique.
   Qed.
 
-  Theorem biunique_decl_recip1 :
-    biunique ->
-    (forall x x' y', R x x' -> R x y' -> x' = y').
+  Lemma rightunique_from_biunique : biunique -> rightunique.
   Proof.
-    intros Huniq; lazy beta delta in Huniq; intros * rel1 rel2.
-    generalize (eq_refl x).
-    now apply Huniq.
+    intros biunique x x' relx y y' rely.
+    apply iffT_arrow_subrelation.
+    now apply biunique.
   Qed.
 
-  Theorem biunique_decl_recip2 :
-    biunique ->
-    (forall x y y', R x y' -> R y y' -> x = y).
+  Lemma leftunique_from_biunique : biunique -> leftunique.
   Proof.
-    intros Huniq; lazy beta delta in Huniq; intros * rel1 rel2.
-    generalize (eq_refl y').
-    now apply Huniq.
+    intros biunique x x' relx y y' rely.
+    apply iffT_flip_arrow_subrelation.
+    now apply biunique.
   Qed.
 
+  Theorem biunique_decl_recip1 : biunique -> forall x x' y', R x x' -> R x y' -> x' = y'.
+  Proof.
+    intro biunique.
+    apply rightunique_decl.
+    apply rightunique_from_biunique.
+    exact biunique.
+  Qed.
+
+  Theorem biunique_decl_recip2 : biunique -> forall x y y', R x y' -> R y y' -> x = y.
+  Proof.
+    intro biunique.
+    apply leftunique_decl.
+    apply leftunique_from_biunique.
+    exact biunique.
+  Qed.
+
+  (** ** Properties of predicates *)
+  
   Lemma half_total_predicate :
     (forall (x : A) (x' y' : B), R x x' -> R x y' -> x' = y')
     -> forall P' : B -> Type, { P : A -> Type & (R ##> iffT) P P' }.
@@ -182,106 +230,72 @@ Section Declarations.
     erewrite Hfun; eauto.
   Qed.
 
+  Lemma half_total_predicate_recip :
+    (forall P' : B -> Type, { P : A -> Type & (R ##> iffT) P P' }) ->
+    (forall (x : A) (x' y' : B), R x x' -> R x y' -> x' = y').
+  Proof.
+    intros Htot x x' y' relxx relxy.
+    destruct (Htot (eq x')) as (P & HP).
+    apply HP in relxx.
+    apply HP in relxy.
+    apply relxy.
+    apply relxx.
+    reflexivity.
+  Qed.
+
+  Lemma half_uniq_predicate :
+    (forall x', { x : A & R x x' }) ->
+    forall (P Q : A -> Type) (P' Q' : B -> Type),
+      (eq ##> iffT) P Q -> (R ##> iffT) P P' ->
+      (R ##> iffT) Q Q' -> (eq ##> iffT) P' Q'.
+  Proof.
+    intros H P Q P' Q' H0 H1 H2 x' y' <-.
+    destruct (H x') as (x & Hx).
+    pose proof Hx as Hx2.
+    specialize (H0 x x eq_refl).
+    apply H1 in Hx.
+    apply H2 in Hx2.
+    firstorder.
+  Qed.
+
 End Declarations.
 
-Lemma half_total_predicate_prop :
-  forall {A B : Type} (R : A -> B -> Prop),
-    (forall (x : A) (x' y' : B), R x x' -> R x y' -> x' = y')
-    -> forall P' : B -> Prop, { P : A -> Prop & (R ##> iff) P P' }.
-Proof.
-  intros A B R Hfun P'.
-  exists (fun x => forall x', R x x' -> P' x').
-(*  exists (fun x => { x' : B & prodP (R x x') (P' x') }). *)
-  split; unfold arrow; firstorder.
-  erewrite Hfun; eauto.
-Qed.
+Section PredicateDeclarations.
 
-Lemma half_total_predicate_recip :
-  forall (A B : Type) (R : A -> B -> Prop),
-    (forall P' : B -> Prop, { P : A -> Prop & (R ##> iff) P P' }) ->
-    (forall (x : A) (x' y' : B), R x x' -> R x y' -> x' = y').
-Proof.
-  intros A B R Htot x x' y' relxx relxy.
-  destruct (Htot (eq x')) as (P & HP).
-  apply HP in relxx.
-  apply HP in relxy.
-  rewrite <- relxy.
-  rewrite relxx.
-  reflexivity.
-Qed.
+  Variables A B : Type.
+  Variable R : A -> B -> Type.
+  
+  Lemma half_uniq_predicate_inst :
+    ((R ##> iffT) ##> iffT) (@forall_def A) (@forall_def B) ->
+    ((R ##> iffT) ##> (R ##> iffT) ##> iffT) (eq ##> iffT) (eq ##> iffT).
+  Proof.
+    intro H.
+    pose (Hsurj := bitotal_decl_recip1 H).
+    pose (Htot := bitotal_decl_recip2 H).
+    intros P P' relP Q Q' relQ; split.
+    + intro relPQ.
+      apply (@half_uniq_predicate _ _ _ Hsurj P Q P' Q'); trivial.
+    + intro relPQ.
+      apply (@half_uniq_predicate _ _ _ Htot P' Q' P Q); trivial; intros x' x relx. {
+        symmetry.
+        now apply relP.
+      }
+      apply relQ in relx.
+      now rewrite relx.
+  Qed.
 
-Lemma half_uniq_predicate :
-  forall (A B : Type) (R : A -> B -> Prop),
-    (forall x', { x : A & R x x' }) ->
-    forall (P Q : A -> Prop) (P' Q' : B -> Prop),
-      (eq ##> iff) P Q -> (R ##> iff) P P' ->
-      (R ##> iff) Q Q' -> (eq ##> iff) P' Q'.
-Proof.
-  intros A B R H P Q P' Q' H0 H1 H2 x' y' <-.
-  destruct (H x') as (x & Hx).
-  pose proof Hx as Hx2.
-  apply H1 in Hx; rewrite <- Hx.
-  apply H2 in Hx2; rewrite <- Hx2.
-  now apply H0.
-Qed.
+  Lemma total_predicate
+        (is_related : (R ##> R ##> iffT) eq eq) :
+    (((R ##> iffT) ##> iffT) ##> iffT) (@forall_def (A -> Type)) (@forall_def (B -> Type)).
+  Proof.
+    pose (Hfun := @biunique_decl_recip1 _ _ _ is_related).
+    pose (Hinj := @biunique_decl_recip2 _ _ _ is_related).
+    apply bitotal_decl.
+    + exact (half_total_predicate R Hfun).
+    + intros *.
+      edestruct (half_total_predicate (flip R)) as (P' & HP'); [ intros; eapply Hinj; eauto |].
+      exists P'.
+      intros; split; apply HP'; assumption.
+  Qed.
 
-Lemma half_uniq_predicate_inst (A B : Type) (R : A -> B -> Prop) :
-  ((R ##> iffT) ##> iffT) (@forall_def A) (@forall_def B) ->
-  ((R ##> iff) ##> (R ##> iff) ##> iffT) (eq ##> iff) (eq ##> iff).
-Proof.
-  intro H.
-  pose (Hsurj := @bitotal_decl_recip1 _ _ _ H).
-  pose (Htot := @bitotal_decl_recip2 _ _ _ H).
-  intros P P' relP Q Q' relQ; split.
-  + intro relPQ.
-    apply (@half_uniq_predicate _ _ _ Hsurj P Q P' Q'); trivial.
-  + intro relPQ.
-    apply (@half_uniq_predicate _ _ _ Htot P' Q' P Q); trivial; intros x' x relx. {
-      symmetry.
-      now apply relP.
-    }
-    apply relQ in relx.
-    now rewrite relx.
-Qed.
-
-Lemma half_uniq_predicate_recip :
-  forall (A B : Type) (R : A -> B -> Prop),
-    (forall (P : A -> Prop) (P' Q' : B -> Prop), (R ##> iff) P P' -> (R ##> iff) P Q' -> (eq ##> iff) P' Q') ->
-    forall x', exists x, R x x'.
-Proof.
-  intros A B R H.
-  pose (P' := fun x' => exists x, R x x').
-  change (forall x', P' x').
-Abort.
-
-Lemma total_predicate
-  (A B : Type)
-  (R : A -> B -> Type)
-  (is_related : (R ##> R ##> iffT) eq eq) :
-  (((R ##> iffT) ##> iffT) ##> iffT) (@forall_def (A -> Type)) (@forall_def (B -> Type)).
-Proof.
-  pose (Hfun := @biunique_decl_recip1 _ _ _ is_related).
-  pose (Hinj := @biunique_decl_recip2 _ _ _ is_related).
-  apply bitotal_decl.
-  + exact (half_total_predicate R Hfun).
-  + intros *.
-    edestruct (half_total_predicate (flip R)) as (P' & HP'); [ intros; eapply Hinj; eauto |].
-    exists P'.
-    intros; split; apply HP'; assumption.
-Qed.
-
-Lemma total_predicate_prop
-  (A B : Type)
-  (R : A -> B -> Prop)
-  (is_related : (R ##> R ##> iffT) eq eq) :
-  (((R ##> iff) ##> iffT) ##> iffT) (@forall_def (A -> Prop)) (@forall_def (B -> Prop)).
-Proof.
-  pose (Hfun := @biunique_decl_recip1 _ _ _ is_related).
-  pose (Hinj := @biunique_decl_recip2 _ _ _ is_related).
-  apply bitotal_decl.
-  + exact (half_total_predicate_prop R Hfun).
-  + intros *.
-    edestruct (half_total_predicate_prop (flip R)) as (P' & HP'); [ intros; eapply Hinj; eauto |].
-    exists P'.
-    intros; split; apply HP'; assumption.
-Qed.
+End PredicateDeclarations.
