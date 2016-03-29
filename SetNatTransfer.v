@@ -86,7 +86,7 @@ Module TransferProp (E:InfDecType)(Fin:WSetsOn E).
       rewrite <- Hx;
       clear Hx x2 ).
 
-  Instance subset_le : Related (SetNat ##> SetNat ##> impl) Fin.Subset le.
+  Instance subset_le : Related (SetNat ##> SetNat ##> arrow) Fin.Subset le.
   Proof.
     SetNat_basics.
     apply FinProp.subset_cardinal.
@@ -97,7 +97,7 @@ Module TransferProp (E:InfDecType)(Fin:WSetsOn E).
     Fin.Subset s1 s2 /\ exists x, Fin.In x s2 /\ ~ Fin.In x s1.
 
   Instance strictsubset_lt :
-    Related (SetNat ##> SetNat ##> impl) StrictSubset lt.
+    Related (SetNat ##> SetNat ##> arrow) StrictSubset lt.
   Proof.
     SetNat_basics.
     unfold StrictSubset.
@@ -105,7 +105,7 @@ Module TransferProp (E:InfDecType)(Fin:WSetsOn E).
     eapply FinProp.subset_cardinal_lt; eauto.
   Qed.
 
-  Instance injectivity : Related (SetNat ##> SetNat ##> impl) Fin.eq Logic.eq.
+  Instance injectivity : Related (SetNat ##> SetNat ##> arrow) Fin.eq Logic.eq.
   Proof.
     SetNat_basics.
     intros Heq.
@@ -113,20 +113,15 @@ Module TransferProp (E:InfDecType)(Fin:WSetsOn E).
     reflexivity.
   Qed.
 
-  Instance surjectivity : Related ((SetNat ##> impl) ##> impl) (@all _) (@all _).
+  Instance surjectivity : Related ((SetNat ##> iffT) ##> iffT) forall_def forall_def.
   Proof.
-    apply surj_decl.
-    intros n.
-    exists (ordinal n).
-    apply ordinal_cardinal.
-  Qed.
-
-  Instance totality : Related ((SetNat ##> flip impl) ##> flip impl) (@all _) (@all _).
-  Proof.
-    apply lefttotal_decl.
-    intros x.
-    exists (Fin.cardinal x).
-    reflexivity.
+    apply bitotal_decl.
+    - intros n.
+      exists (ordinal n).
+      apply ordinal_cardinal.
+    - intros x.
+      exists (Fin.cardinal x).
+      reflexivity.
   Qed.
 
   Definition addNew_pred (x : Fin.elt) (s1 : Fin.t) (s2 : Fin.t) :=
@@ -134,7 +129,7 @@ Module TransferProp (E:InfDecType)(Fin:WSetsOn E).
   Definition succ_pred x y := S x = y.
 
   Instance addNew_succ :
-    forall x, Related (SetNat ##> SetNat ##> impl) (addNew_pred x) succ_pred.
+    forall x, Related (SetNat ##> SetNat ##> arrow) (addNew_pred x) succ_pred.
   Proof.
     SetNat_basics.
     unfold addNew_pred.
@@ -203,7 +198,7 @@ Module TransferProp (E:InfDecType)(Fin:WSetsOn E).
   Definition sum_pred n1 n2 n3 := n1 + n2 = n3.
   
   Instance disj_union_ter :
-    Related (SetNat ##> SetNat ##> SetNat ##> impl) disjSum_pred sum_pred.
+    Related (SetNat ##> SetNat ##> SetNat ##> arrow) disjSum_pred sum_pred.
   Proof.
     SetNat_basics.
     unfold disjSum_pred.

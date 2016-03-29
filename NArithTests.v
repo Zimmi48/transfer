@@ -1,10 +1,6 @@
 (* Examples of transfer from nat to N *)
-(* To evaluate this file,
- * run coqc on Transfer.v and NArithTransfer.v and run coq with:
- * $coqide -I . NArithTests.v
- *)
 
-Axiom mix : forall A : Prop, A -> A -> A.
+Axiom mix : forall A : Type, A -> A -> A.
 Tactic Notation "give_2_proofs" := apply mix.
 
 Tactic Notation "give_3_proofs" := apply mix; [apply mix|].
@@ -156,4 +152,16 @@ Lemma compare_succ :
   forall n m, N.compare (N.succ n) (N.succ m) = N.compare n m.
 Proof.
   exactm Nat.compare_succ.
+Qed.
+
+(** ** A theorem of recursion. *)
+
+Theorem N_nat_rect : forall P : N -> Type, P 0%N -> (forall n : N, P n -> P (N.succ n)) -> forall n : N, P n.
+Proof.
+  give_3_proofs.
+  - transfer.
+    cbn.
+    exact nat_rect.
+  - exactm nat_rect.
+  - applym nat_rect.
 Qed.
