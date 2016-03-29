@@ -18,14 +18,25 @@ Definition respectful_arrow
 Notation " R ##> R' " := (respectful_arrow R R')
                            (right associativity, at level 55) : type_scope.
 
-(* How to declare surjectivity of a relation *)
-
 Local Notation " A <-> B " := (iffT A B) : type_scope.
 
-Theorem surj_decl :
+(** Totality declarations *)
+
+(** Surjectivity, i.e. right-totality *)
+Definition righttotal {A B : Type} (R : A -> B -> Type) :=
+  ((R ##> arrow) ##> arrow) forall_def forall_def.
+
+(** Left-totality *)
+Definition lefttotal {A B : Type} (R : A -> B -> Type) :=
+  ((R ##> flip arrow) ##> flip arrow) forall_def forall_def.
+
+(** Both right and left-totality *)
+Definition bitotal {A B : Type} (R : A -> B -> Type) :=
+  ((R ##> iffT) ##> iffT) forall_def forall_def.
+
+Theorem righttotal_decl :
   forall (A B : Type) (R : A -> B -> Type),
-    (forall x' : B, { x : A & R x x'}) <->
-    ((R ##> arrow) ##> arrow) (@forall_def A) (@forall_def B).
+    (forall x' : B, { x : A & R x x'}) <-> righttotal R.
 Proof.
   intros A B R.
   lazy delta zeta.
@@ -40,31 +51,34 @@ Qed.
 
 Theorem lefttotal_decl :
   forall (A B : Type) (R : A -> B -> Type),
-    (forall x : A, { x' : B & R x x'}) ->
-    ((R ##> flip arrow) ##> flip arrow) (@forall_def A) (@forall_def B).
+    (forall x : A, { x' : B & R x x'}) <-> lefttotal R.
 Proof.
   intros A B R.
   lazy delta zeta.
-  intros Htot p p' Hp Hall x.
-  destruct (Htot x) as [x' Rx].
-  apply (Hp _ x'); trivial.
+  split; intros Htot.
+  - intros p p' Hp Hall x.
+    destruct (Htot x) as [x' Rx].
+    now apply (Hp _ x').
+  - apply (Htot _ (fun _ => True)); trivial.
+    intros x x' Rx _.
+    now exists x'.
 Qed.
 
-Theorem lefttotal_decl_recip :
+Lemma bitotal_from_left_and_right_total :
   forall (A B : Type) (R : A -> B -> Type),
-    ((R ##> flip arrow) ##> flip arrow) (@forall_def A) (@forall_def B) ->
-    (forall x : A, { x' : B & R x x'}).
+    righttotal R -> lefttotal R -> bitotal R.
 Proof.
   intros A B R.
-  lazy delta zeta.
-  intros Htot.
-  apply (Htot _ (fun _ => True)); trivial.
-  intros x x' Rx _.
-  exists x'; trivial.
+  lazy beta delta.
+  intros H1 H2 P P' H3.
+  split.
+  1:apply H1.
+  2:apply H2.
+  all:apply H3.
 Qed.
 
-Definition bitotal {A B : Type} (R : A -> B -> Type) :=
-  ((R ##> iffT) ##> iffT) (@forall_def A) (@forall_def B).
+(* The proof could maybe be made more generic with a little bit of work on
+ intersection and union of relations and their compatibility with ##> *)
 
 Theorem bitotal_decl :
   forall (A B : Type) (R : A -> B -> Type),
@@ -72,26 +86,11 @@ Theorem bitotal_decl :
     (forall x : A, { x' : B & R x x'}) ->
     bitotal R.
 Proof.
-  intros A B R.
-  lazy delta zeta.
-  intros Hsurj Htot p p' Hp; split; intros Hall.
-  + intro x'.
-    destruct (Hsurj x') as [x Rx].
-    apply (Hp x _); trivial.
-  + intro x.
-    destruct (Htot x) as [x' Rx].
-    apply (Hp _ x'); trivial.
+  intros A B R H1 H2.
+  apply righttotal_decl in H1.
+  apply lefttotal_decl in H2.
+  now apply bitotal_from_left_and_right_total.
 Qed.
-
-(* other approach:
-  intros A B R [Hsurj Htot].
-  apply surj_decl in Hsurj.
-  apply tot_decl in Htot.
-  apply is_heteroSubrel in Hsurj.
-  apply is_heteroSubrel in Htot.
-
-Then a little bit of work on intersection and union of relations
-and their compatibility with ##> is still needed. *)
 
 Theorem bitotal_decl_recip1 :
   forall (A B : Type) (R : A -> B -> Type),
