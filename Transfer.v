@@ -10,14 +10,11 @@ Require Export Transfer.StandardInstances.
 Typeclasses Opaque forall_def arrow.
 (** universe-polymorphic forall_def and arrow are not declared as opaque in the library *)
 
-Class Related
-  (A B : Type) (R : A -> B -> Type) (t : A) (t' : B) : Prop :=
+Class Related {A B : Type} (R : A -> B -> Type) (t : A) (t' : B) :=
   is_related : R t t'.
 
-Arguments Related {A B} _ _ _.
-
 (* Strict subrelation *)
-Class HeteroSubrel {A B : Type} (R R' : A -> B -> Type) : Prop :=
+Class HeteroSubrel {A B : Type} (R R' : A -> B -> Type) :=
   is_heteroSubrel : forall {x y}, R x y -> R' x y.
 
 Generalizable Variables t u.
@@ -185,7 +182,7 @@ Instance bitotal_predicate_rule
   (A B : Type)
   (R : A -> B -> Type)
   (inst : Related (R ##> R ##> iffT) eq eq) :
-  Related (((R ##> iffT) ##> iffT) ##> iffT) (@forall_def (A -> Type)) (@forall_def (B -> Type)).
+  Related (((R ##> iffT) ##> iffT) ##> iffT) forall_def forall_def.
 Proof.
   unfold Related in *.
   now apply total_predicate.

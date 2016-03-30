@@ -19,7 +19,7 @@ Proof. apply N2Nat.id. Qed.
 (* Totality of natN *)
 
 Instance natN_surjective_total :
-  Related ((natN ##> iffT) ##> iffT) (@forall_def nat) (@forall_def N).
+  Related ((natN ##> iffT) ##> iffT) forall_def forall_def.
 Proof.
   related_basics.
   unfold natN.
