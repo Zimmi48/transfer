@@ -221,8 +221,9 @@ End Declarations.
 
 Section PredicateDeclarations.
 
-  Variables A B : Type.
+  Variables A B C D : Type.
   Variable R : A -> B -> Type.
+  Variable S : C -> D -> Type.
 
   (** * Properties of predicates *)
   
@@ -325,5 +326,32 @@ Section PredicateDeclarations.
       | apply (leftunique_predicate lefttotal relP relQ) ];
       assumption.
   Qed.
-    
+
+  Lemma bitotal_function :
+    biunique R -> bitotal R -> bitotal S -> bitotal (R ##> S).
+  Proof.
+    intros biunique_R bitotal_R bitotal_S.
+    apply bitotal_decl.
+    - pose (rightunique_R := biunique_decl_recip1 biunique_R).
+      pose (lefttotal_R := bitotal_decl_recip2 bitotal_R).
+      pose (righttotal_S := bitotal_decl_recip1 bitotal_S).
+      intros f'.
+      exists (fun x : A => projT1 (righttotal_S (f' (projT1 (lefttotal_R x))))).
+      intros x x' relx.
+      specialize (rightunique_R x x' (projT1 (lefttotal_R x)) relx).
+      rewrite <- rightunique_R.
+      + destruct (righttotal_S (f' x')); auto.
+      + destruct (lefttotal_R x); auto.
+    - pose (leftunique_R := biunique_decl_recip2 biunique_R).
+      pose (righttotal_R := bitotal_decl_recip1 bitotal_R).
+      pose (lefttotal_S := bitotal_decl_recip2 bitotal_S).
+      intro f.
+      exists (fun x' : B => projT1 (lefttotal_S (f (projT1 (righttotal_R x'))))).
+      intros x x' relx.
+      specialize (leftunique_R x (projT1 (righttotal_R x')) x' relx).
+      rewrite <- leftunique_R.
+      + destruct (lefttotal_S (f x)); auto.
+      + destruct (righttotal_R x'); auto.
+  Qed.
+  
 End PredicateDeclarations.
