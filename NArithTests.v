@@ -12,7 +12,11 @@ Require Import NArithTransfer.
 
 Lemma pred_succ : forall n, N.pred (N.succ n) = n.
 Proof.
-  exactm Nat.pred_succ.
+  give_2_proofs.
+  - exactm Nat.pred_succ.
+  - intro.
+    transfer.
+    apply Nat.pred_succ.
 Qed.
 
 Lemma pred_0 : N.pred 0 = 0%N.
@@ -150,4 +154,12 @@ Proof.
     exact nat_rect.
   - exactm nat_rect.
   - applym nat_rect.
-Qed.
+Defined.
+
+(** We can prove a theorem in N using the inductive predicate from nat *)
+Lemma comm : forall n m : N, N.add n m = N.add m n.
+Proof.
+  intro n.
+  applym nat_rect.
+  cbn.
+Abort.
