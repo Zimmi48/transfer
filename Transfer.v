@@ -129,14 +129,8 @@ Ltac related_tauto :=
   related_basics;
   tauto.
 
-(* Having the following instance allows transferring many
-   more theorems but prevents using the transfer and applym tactics. *)
-(*
-Instance impl_reflexivity : forall (A : Prop), Related impl A A.
-Proof.
-  related_tauto.
-Qed.
-*)
+Instance iffT_reflexivity : forall (A : Type), Related iffT A A | 10.
+Proof. firstorder. Qed.
 
 Instance true_rule : Related iff True True.
 Proof.
@@ -148,6 +142,9 @@ Proof arrow_arrow.
 
 Instance iff_rule : Related (iff ##> iff ##> iffT) iff iff.
 Proof iff_iff.
+
+Instance prod_rule : Related (iffT ##> iffT ##> iffT) prod prod.
+Proof. firstorder. Qed.
 
 Instance and_rule :
   Related (iff ##> iff ##> iffT) and and.
