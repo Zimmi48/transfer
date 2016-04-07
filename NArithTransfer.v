@@ -10,10 +10,10 @@ Require Import Coq.NArith.Nnat.
 
 Definition natN x x' : Type := N.of_nat x = x'.
 
-Instance natN_nb : forall n : nat, Related natN n (N.of_nat n).
+Instance natN_nb : forall n : nat, Related natN n (N.of_nat n) | 10.
 Proof. reflexivity. Qed.
 
-Instance natN_nb' : forall n : N, Related natN (N.to_nat n) n.
+Instance natN_nb' : forall n : N, Related natN (N.to_nat n) n | 10.
 Proof. apply N2Nat.id. Qed.
 
 (* Totality of natN *)
