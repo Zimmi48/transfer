@@ -48,6 +48,10 @@ Section Definitions.
   (** Both right and left-unique *)
   Definition biunique := (R ##> R ##> iffT) eq eq.
 
+  (** Definition of "bounded forall" *)
+  Definition ball (subType : A -> Type) (predicate : A -> Type) :=
+    forall x, subType x -> predicate x.
+
 End Definitions.
 
 (** ** Ltac to solve automatically some goals which just need reordering of hypotheses *)
@@ -154,6 +158,15 @@ Section Declarations1.
     assumption.
   Qed.
 
+  Lemma generic_right_covered_decl :
+    ((R ##> arrow) ##> arrow) forall_def (fun P' => forall y, { x : A & R x y } -> P' y).
+  Proof.
+    lazy beta delta.
+    intros P P' Prel HP x' (x & xrel).
+    apply (Prel _ _ xrel).
+    apply HP.
+  Qed.
+
 End Declarations1.
 
 Section Declarations2.
@@ -190,6 +203,16 @@ Section Declarations2.
     assumption.
   Qed.
 
+  Lemma generic_left_covered_decl :
+    ((R ##> flip arrow) ##> flip arrow) (fun P => forall x, { y : B & R x y } -> P x) forall_def.
+  Proof.
+    pose (H := @generic_right_covered_decl B A (flip R)).
+    lazy beta delta.
+    intros P P' Prel HP x' (x & xrel).
+    apply (Prel _ _ xrel).
+    apply HP.
+  Qed.
+
   (** ** Properties derived from their right and left-equivalent *)
 
   Theorem bitotal_decl :
@@ -203,6 +226,22 @@ Section Declarations2.
     now apply bitotal_from_right_and_left_total.
   Qed.
 
+  (** *** Generic property for non-total relations *)
+  
+  Theorem generic_covered_decl :
+    let coveredA := fun x => { y : B & R x y } in
+    let coveredB := fun y => { x : A & R x y } in
+    ((R ##> iffT) ##> iffT) (ball coveredA) (ball coveredB).
+  Proof.
+    lazy beta delta zeta.
+    intros P P' relP.
+    split.
+    - apply generic_right_covered_decl.
+      firstorder.
+    - apply generic_left_covered_decl.
+      firstorder.
+  Qed.
+    
   (** ** More complex properties *)
 
   Theorem righttotal_predicate : rightunique R <-> righttotal (R ##> iffT).
@@ -223,31 +262,6 @@ Section Declarations2.
       apply rely.
       apply relx.
       reflexivity.
-  Qed.
-
-  (** ** Generic property for non-total relations *)
-  
-  Definition ball {A : Type} (subType : A -> Type) (predicate : A -> Type) :=
-    forall x, subType x -> predicate x.
-
-  Theorem generic_covered_decl :
-    let coveredA := fun x => { y : B & R x y } in
-    let coveredB := fun y => { x : A & R x y } in
-    ((R ##> iffT) ##> iffT) (ball coveredA) (ball coveredB).
-  Proof.
-    intros coveredA coveredB.
-    lazy beta delta.
-    intros P P' Prel; split.
-    - intros HP x' (x & xrel).
-      destruct (Prel x x' xrel) as [Prel' _].
-      apply Prel'.
-      apply HP.
-      now exists x'.
-    - intros HP' x (x' & xrel).
-      destruct (Prel x x' xrel) as [_ Prel'].
-      apply Prel'.
-      apply HP'.
-      now exists x.
   Qed.
 
   (** * Uniqueness declarations *)
@@ -281,7 +295,23 @@ Section Declarations2.
     - now apply rightunique_decl.
     - now apply leftunique_decl.
   Qed.
-  
+    
+  (** ** More complex properties *)  
+
+  Lemma rightunique_predicate :
+    righttotal R ->
+    ((R ##> iffT) ##> (R ##> iffT) ##> arrow) (eq ##> iffT) (eq ##> iffT).
+  Proof.
+    intros righttotal P P' relP Q Q' relQ H x' * <-.
+    assert ({ x : A & R x x' }) as (x & Hx)
+        by now apply righttotal_decl.
+    pose proof Hx as Hx2.
+    specialize (H x x eq_refl).
+    apply relP in Hx.
+    apply relQ in Hx2.
+    firstorder.
+  Qed.
+
 End Declarations2.
 
 Section Declarations3.
@@ -323,6 +353,8 @@ Section Declarations3.
         exact bitotal.
   Qed.
 
+  (* ** A lemma that is not a generalization of the previous one unfortunately. *)
+  
   Lemma bitotal_function :
     biunique R -> bitotal R -> bitotal S -> bitotal (R ##> S).
   Proof.
@@ -352,33 +384,21 @@ Section Declarations3.
 
   (** * Uniqueness declarations *)
 
-  Lemma rightunique_predicate :
-    righttotal R ->
-    ((R ##> iffT) ##> (R ##> iffT) ##> arrow) (eq ##> iffT) (eq ##> iffT).
-  Proof.
-    intros righttotal P P' relP Q Q' relQ H x' * <-.
-    assert ({ x : A & R x x' }) as (x & Hx)
-        by now apply righttotal_decl.
-    pose proof Hx as Hx2.
-    specialize (H x x eq_refl).
-    apply relP in Hx.
-    apply relQ in Hx2.
-    firstorder.
-  Qed.
-
+  (** ** Properties derived from their right-equivalent *)
+  
   Lemma leftunique_predicate :
     lefttotal R ->
     ((R ##> iffT) ##> (R ##> iffT) ##> flip arrow) (eq ##> iffT) (eq ##> iffT).
   Proof.
-    intros lefttotal P P' relP Q Q' relQ H x * <-.
-    assert ({ x' : B & R x x' }) as (x' & Hx')
-        by now apply lefttotal_decl.
-    pose proof Hx' as Hx'2.
-    specialize (H x' x' eq_refl).
-    apply relP in Hx'.
-    apply relQ in Hx'2.
-    firstorder.
+    intros lefttotal.
+    apply fliptotal in lefttotal.
+    apply rightunique_predicate in lefttotal.
+    intros P P' ? Q Q' ?.
+    specialize (lefttotal P' P ltac:(flipdecl) Q' Q ltac:(flipdecl)).
+    assumption.
   Qed.
+
+  (** ** Properties derived from their right and left-equivalent *)
 
   Lemma biunique_predicate :
     bitotal R ->
