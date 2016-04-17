@@ -97,10 +97,10 @@ Instance forall_rule
 (* Subrelations *)
 
 Instance sub_iffT_arrow : HeteroSubrel iffT arrow.
-Proof. firstorder. Qed.
+Proof iffT_arrow_subrelation.
 
 Instance sub_iffT_flip_arrow : HeteroSubrel iffT (flip arrow).
-Proof. firstorder. Qed.
+Proof iffT_flip_arrow_subrelation.
 
 Instance sub_respectful_left
   (A B C D : Type)
