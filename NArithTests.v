@@ -6,7 +6,7 @@ Tactic Notation "give_2_proofs" := apply mix.
 Tactic Notation "give_3_proofs" := apply mix; [apply mix|].
 
 Require Import PeanoNat.
-Require Import NArithTransfer.
+Require Import Transfer.NArithTransfer.
 
 (** ** Basic specifications : pred add sub mul *)
 
@@ -146,20 +146,38 @@ Qed.
 
 (** ** A theorem of recursion. *)
 
-Theorem N_nat_rect : forall P : N -> Type, P 0%N -> (forall n : N, P n -> P (N.succ n)) -> forall n : N, P n.
+Theorem N_nat_ind : forall P : N -> Prop, P 0%N -> (forall n : N, P n -> P (N.succ n)) -> forall n : N, P n.
 Proof.
   give_3_proofs.
   - transfer.
     cbn.
-    exact nat_rect.
-  - exactm nat_rect.
-  - applym nat_rect.
-Defined.
+    exact nat_ind.
+  - exactm nat_ind.
+  - applym nat_ind.
+Qed.
 
 (** We can prove a theorem in N using the inductive predicate from nat *)
 Lemma comm : forall n m : N, N.add n m = N.add m n.
 Proof.
   intro n.
-  applym nat_rect.
+  applym nat_ind.
+  cbn.
+Abort.
+
+Theorem N_nat_rect : forall P : N -> Type, P 0%N -> (forall n : N, P n -> P (N.succ n)) -> forall n : N, P n.
+Proof.
+  give_3_proofs.
+  - transfer'.
+    cbn.
+    exact nat_rect.
+  - exactm' nat_rect.
+  - applym' nat_rect.
+Defined.
+
+(** We can prove a theorem in N using the recursion principle from nat *)
+Lemma comm : forall n m : N, N.add n m = N.add m n.
+Proof.
+  intro n.
+  applym' nat_rect.
   cbn.
 Abort.

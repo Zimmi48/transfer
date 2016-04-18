@@ -198,7 +198,7 @@ Module TransferProp (E:InfDecType)(Fin:WSetsOn E).
   Definition sum_pred n1 n2 n3 := n1 + n2 = n3.
   
   Instance disj_union_ter :
-    Related (SetNat ##> SetNat ##> SetNat ##> arrow) disjSum_pred sum_pred.
+    Related (SetNat ##> SetNat ##> SetNat ##> impl) disjSum_pred sum_pred.
   Proof.
     SetNat_basics.
     unfold disjSum_pred.

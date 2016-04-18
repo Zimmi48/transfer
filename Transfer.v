@@ -6,6 +6,7 @@
  *)
 
 Require Export Transfer.StandardInstances.
+Require Transfer.Respectful.
 
 Typeclasses Opaque forall_def arrow.
 (** universe-polymorphic forall_def and arrow are not declared as opaque in the library *)
@@ -18,7 +19,8 @@ Class HeteroSubrel {A B : Type} (R R' : A -> B -> Type) :=
   is_heteroSubrel : forall {x y}, R x y -> R' x y.
 
 Generalizable Variables t u.
-Theorem modulo `{class : Related _ _ arrow t u} : t -> u.
+
+Theorem modulo `{class : Related _ _ impl t u} : t -> u.
 Proof.
   lazy beta delta in class.
   tauto.
@@ -31,6 +33,20 @@ Tactic Notation "applym" constr(t) :=
   let H := fresh in
   pose (H := t); apply modulo in H; apply H; clear H.
 Tactic Notation "transfer" := apply modulo.
+
+Theorem modulo' `{class : Related _ _ arrow t u} : t -> u.
+Proof.
+  lazy beta delta in class.
+  tauto.
+Qed.
+
+Check modulo'.
+
+Tactic Notation "exactm'" constr(t) := exact (modulo' t).
+Tactic Notation "applym'" constr(t) :=
+  let H := fresh in
+  pose (H := t); apply modulo' in H; apply H; clear H.
+Tactic Notation "transfer'" := apply modulo'.
 
 (* RULES *)
 
@@ -84,6 +100,12 @@ Instance arrow_rule
          (inst : Related R (arrow t1 t2) (arrow t1' t2')) :
   Related R (t1 -> t2) (t1' -> t2') | 2 := inst.
 
+Instance impl_rule
+         (R : Prop -> Prop -> Prop)
+         (t1 t2 t1' t2' : Prop)
+         (inst : Related R (impl t1 t2) (impl t1' t2')) :
+  Related R (t1 -> t2) (t1' -> t2') | 2 := inst.
+
 (* FORALL *)
 
 Instance forall_rule
@@ -92,9 +114,24 @@ Instance forall_rule
   (inst : Related R (forall_def (fun x : t1 => t2 x)) (forall_def (fun x' : t1' => t2' x'))) :
   Related R (forall x : t1, t2 x) (forall x' : t1', t2' x') | 3 := inst.
 
+Instance all_rule
+  (R : Prop -> Prop -> Prop)
+  (t1 t1' : Type) (t2 : t1 -> Prop) (t2' : t1' -> Prop)
+  (inst : Related R (all (fun x : t1 => t2 x)) (all (fun x' : t1' => t2' x'))) :
+  Related R (forall x : t1, t2 x) (forall x' : t1', t2' x') | 3 := inst.
+
 (* Check modulo. launches an infinite loop *)
 
 (* Subrelations *)
+
+Instance sub_impl_arrow : HeteroSubrel impl arrow.
+Proof ltac:(firstorder).
+
+Instance sub_flip_impl_flip_arrow : HeteroSubrel (flip impl) (flip arrow).
+Proof ltac:(firstorder).
+
+Instance sub_iff_iffT : HeteroSubrel iff iffT.
+Proof ltac:(firstorder).
 
 Instance sub_iffT_arrow : HeteroSubrel iffT arrow.
 Proof iffT_arrow_subrelation.
@@ -102,17 +139,23 @@ Proof iffT_arrow_subrelation.
 Instance sub_iffT_flip_arrow : HeteroSubrel iffT (flip arrow).
 Proof iffT_flip_arrow_subrelation.
 
+Instance sub_iff_impl : HeteroSubrel iff impl.
+Proof ltac:(firstorder).
+
+Instance sub_iff_flip_impl : HeteroSubrel iff (flip impl).
+Proof ltac:(firstorder).
+
 Instance sub_respectful_left
   (A B C D : Type)
   (R1 R2 : A -> B -> Type) (R' : C -> D -> Type) :
   HeteroSubrel R1 R2 -> HeteroSubrel (R2 ##> R') (R1 ##> R').
-Proof. firstorder. Qed.
+Proof ltac:(firstorder).
 
 Instance sub_respectful_right
   (A B C D : Type)
   (R : A -> B -> Type) (R1' R2' : C -> D -> Type) :
   HeteroSubrel R1' R2' -> HeteroSubrel (R ##> R1') (R ##> R2').
-Proof. firstorder. Qed.
+Proof ltac:(firstorder).
 
 (* Predefined instances *)
 
@@ -130,52 +173,63 @@ Ltac related_tauto :=
   tauto.
 
 Instance iffT_reflexivity : forall (A : Type), Related iffT A A | 10.
-Proof. firstorder. Qed.
+Proof ltac:(firstorder).
 
 Instance true_rule : Related iff True True.
-Proof.
-  related_tauto.
-Qed.
+Proof ltac:(related_tauto).
 
 Instance arrow_transfer_rule : Related (iffT ##> iffT ##> iffT) arrow arrow.
 Proof arrow_arrow.
 
-Instance iff_rule : Related (iff ##> iff ##> iffT) iff iff.
+Instance impl_transfer_rule : Related (iff ##> iff ##> iff) impl impl.
+Proof impl_impl.
+
+Instance iff_rule : Related (iff ##> iff ##> iff) iff iff.
 Proof iff_iff.
 
 Instance prod_rule : Related (iffT ##> iffT ##> iffT) prod prod.
-Proof. firstorder. Qed.
+Proof prod_prod.
 
-Instance and_rule :
-  Related (iff ##> iff ##> iffT) and and.
+Instance and_rule : Related (iff ##> iff ##> iff) and and.
 Proof and_and.
 
-Instance or_rule :
-  Related (iff ##> iff ##> iffT) or or.
+Instance or_rule : Related (iff ##> iff ##> iff) or or.
 Proof or_or.
 
 Instance eq_rule :
   forall (A : Type),
   Related (eq ##> eq ##> iff) (@eq A) (@eq A).
-Proof.
-  related_basics.
-  intros x x' Hx y y' Hy; split; intro Heq.
-  + rewrite <- Hx, <- Hy.
-    assumption.
-  + rewrite Hx, Hy.
-    assumption.
-Qed.
-
-Instance eq_rule' :
-  forall (A : Type),
-  Related (eq ##> eq ##> iffT) (@eq A) (@eq A).
 Proof eq_eq.
 
 Instance eq_reflexivity :
   forall (A : Set) (x : A), Related eq x x.
-Proof. reflexivity. Qed.
+Proof ltac:(reflexivity).
 
+(** ** Totality declarations *)
+
+Instance bitotal_from_bitotal
+  (A B : Type)
+  (R : A -> B -> Type)
+  (inst : Related ((R ##> iffT) ##> iffT) forall_def forall_def) :
+  Related ((R ##> iff) ##> iff) (@all A) (@all B).
+Proof.
+  unfold Related in *.
+  apply Respectful.bitotal_decl.
+  now apply bitotal_decl_recip1.
+  now apply bitotal_decl_recip2.
+Qed.
+  
 Instance bitotal_predicate_rule
+  (A B : Type)
+  (R : A -> B -> Type)
+  (inst : Related (R ##> R ##> iff) eq eq) :
+  Related (((R ##> iff) ##> iff) ##> iff) (@all (A -> Prop)) (@all (B -> Prop)).
+Proof.
+  unfold Related in *.
+  now apply Respectful.total_predicate.
+Qed.
+
+Instance bitotal_predicate_rule'
   (A B : Type)
   (R : A -> B -> Type)
   (inst : Related (R ##> R ##> iffT) eq eq) :

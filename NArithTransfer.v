@@ -8,7 +8,7 @@
 Require Export Transfer.Transfer Coq.NArith.BinNatDef.
 Require Import Coq.NArith.Nnat.
 
-Definition natN x x' : Type := N.of_nat x = x'.
+Definition natN x x' := N.of_nat x = x'.
 
 Instance natN_nb : forall n : nat, Related natN n (N.of_nat n) | 10.
 Proof. reflexivity. Qed.
@@ -18,7 +18,7 @@ Proof. apply N2Nat.id. Qed.
 
 (* Totality of natN *)
 
-Instance natN_surjective_total :
+Instance natN_bitotal :
   Related ((natN ##> iffT) ##> iffT) forall_def forall_def.
 Proof.
   related_basics.
@@ -84,12 +84,13 @@ Qed.
 
 Instance inj_iffT : Related (natN ##> natN ##> iffT) eq eq.
 Proof.
+  intros ? ? reln ? ? relm.
   split;
   unfold natN in *.
-  - rewrite <- X.
+  - rewrite <- reln.
     intros -> .
     assumption.
-  - rewrite <- X0.
+  - rewrite <- relm.
     intros -> .
     now apply Nat2N.inj.
 Qed.

@@ -94,7 +94,8 @@ endif
 #                    #
 ######################
 
-VFILES:=Respectful.v\
+VFILES:=CRespectful.v\
+  Respectful.v\
   StandardInstances.v\
   Transfer.v\
   NArithTransfer.v\
