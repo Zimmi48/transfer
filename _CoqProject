@@ -1,4 +1,4 @@
--R . Transfer
+-R . Transfer -o Makefile
 CRespectful.v
 Respectful.v
 StandardInstances.v
