@@ -18,7 +18,7 @@ but it is not guaranteed to work with any type of theorem.
 also be able to change your current proof goal from one representation
 to the other by doing ``transfer`` (this may not work well if you
 have more than two related representations). This way of using the
-transfer library was inspired by Isabelle ``transfer'`` tactic.
+transfer library was inspired by Isabelle's ``transfer'`` tactic.
 
 ## Transfer declarations
 
@@ -44,12 +44,21 @@ Instance surjectivity_of_R : Related ((R ##> impl) ##> impl) (@all A) (@all B).
 Instance totality_of_R : Related ((R ##> flip impl) ##> flip impl) (@all A) (@all B).
 ```
 
-[Transfer.v](Transfer.v) contains proofs that the last two declarations correspond
-indeed to surjectivity and totality theorems.
+[Respectful.v](Respectful.v) contains theorems relating these kinds of declarations
+to more familiar statements.
 
 If some of these properties are not true for relation ``R``, it may be possible to
 prove variants, for instance replacing equality with another equivalence
 or universal quantification with some bounded quantification.
+
+If all these properties are true, then they can be expressed in a simpler way in only
+two properties:
+
+```coq
+Instance bitotal_R : Related ((R ##> iff) ##> iff) (@all A) (@all B).
+
+Instance biunique_R : Related (R ##> R ##> iff) (@eq A) (@eq B).
+```
 
 ### Compatibility with functions and relations
 
@@ -83,7 +92,7 @@ Instance compat_with_binary_op' : Related (flip R ##> flip R ##> flip R) bin_op_
 You can see examples of transferred theorems in [NArithTests.v](NArithTests.v).
 When two theorems have the same form but for related objects (in particular, quantification is
 on two different types), you can prove only one of them and use
-``exact (modulo my_proved_thm)`` to get a proof of the other.
+``exactm my_proved_thm`` to get a proof of the other.
 This will unify the current goal with ``my_proved_thm`` modulo some known relations
 (previously declared as instances of ``Related``).
 
@@ -99,10 +108,12 @@ where
 ?class : [ |- Related impl ?t ?u]
 ```
 
-By calling it through ``exact (modulo thm)`` you are providing it with the values
+By calling it through `exactm thm` which is just sugar for `exact (modulo thm)`
+you are providing it with the values
 of ``?t`` and ``?u`` and it just has to infer a proof of ``Related impl ?t ?u``
 from the known ``Related`` instances.
-Another use however is to call ``apply modulo`` inside a proof development, thus
+Another use however is to call `transfer` (just sugar for `apply modulo`)
+inside a proof development, thus
 providing ``?u`` but not ``?t``. In some cases, it will be able to also infer
 the value of ``?t`` and leave you with a transformed goal, thus effectively
 operating a change of representation.
@@ -110,14 +121,14 @@ Since it is a more complicated task, it might also fail, or leave you a transfor
 goal which does not correspond to what you wanted (in particular when your type
 is related to several other types).
 
-Here is an example of how it can be used to go beyond ``exact (modulo thm)``:
+Here is an example of how it can be used to go beyond `exactm thm)`:
 
 ```coq
 Require Import NArithTransfer.
 
 Goal forall x1 y1 z1 : N, x1 = y1 -> N.add x1 z1 = N.add y1 z1.
 Proof.
-  apply modulo. (* Now the goal is: forall x x0 x1 : nat, x = x0 -> x + x1 = x0 + x1 *)
+  transfer. (* Now the goal is: forall x x0 x1 : nat, x = x0 -> x + x1 = x0 + x1 *)
   intros.
   Check f_equal2_plus. (* f_equal2_plus : forall x1 y1 x2 y2 : nat, x1 = y1 -> x2 = y2 -> x1 + x2 = y1 + y2 *)
   apply f_equal2_plus; trivial.
@@ -135,7 +146,7 @@ Require Import NArithTransfer.
 Goal forall n, N.pred (N.succ n) = n.
 Proof.
   enough (forall n, True -> N.pred (N.succ n) = n) by firstorder. (* Adding dummy hypothesis *)
-  apply modulo. (* Now the goal is: forall n : nat, True -> Nat.pred (S n) = n *)
+  trasnfer. (* Now the goal is: forall n : nat, True -> Nat.pred (S n) = n *)
   intros n _.
   apply PeanoNat.Nat.pred_succ.
 Qed.
