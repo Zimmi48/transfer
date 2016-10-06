@@ -213,6 +213,9 @@ Instance eq_reflexivity :
   forall (A : Set) (x : A), Related eq x x.
 Proof ltac:(reflexivity).
 
+Instance not_rule : Related (iff ##> iff) not not.
+Proof ltac:(related_tauto).
+
 (** ** Totality declarations *)
 
 Instance bitotal_from_bitotal
