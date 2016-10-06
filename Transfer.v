@@ -32,7 +32,7 @@ Tactic Notation "exactm" constr(t) := exact (modulo t).
 Tactic Notation "applym" constr(t) :=
   let H := fresh in
   pose (H := t); apply modulo in H; apply H; clear H.
-Tactic Notation "transfer" := apply modulo.
+Tactic Notation "transfer" := refine (modulo _).
 
 Theorem modulo' `{class : Related _ _ arrow t u} : t -> u.
 Proof.
@@ -46,7 +46,7 @@ Tactic Notation "exactm'" constr(t) := exact (modulo' t).
 Tactic Notation "applym'" constr(t) :=
   let H := fresh in
   pose (H := t); apply modulo' in H; apply H; clear H.
-Tactic Notation "transfer'" := apply modulo'.
+Tactic Notation "transfer'" := refine (modulo' _).
 
 (* RULES *)
 
@@ -175,8 +175,16 @@ Ltac related_tauto :=
 Instance iffT_reflexivity : forall (A : Type), Related iffT A A | 10.
 Proof ltac:(firstorder).
 
+Instance iff_reflexivity : forall (A : Prop), Related iff A A | 10.
+Proof ltac:(related_tauto).
+
+(*
 Instance true_rule : Related iff True True.
 Proof ltac:(related_tauto).
+
+Instance false_rule : Related iff False False.
+Proof ltac:(related_tauto).
+*)
 
 Instance arrow_transfer_rule : Related (iffT ##> iffT ##> iffT) arrow arrow.
 Proof arrow_arrow.
@@ -218,7 +226,7 @@ Proof.
   now apply bitotal_decl_recip1.
   now apply bitotal_decl_recip2.
 Qed.
-  
+
 Instance bitotal_predicate_rule
   (A B : Type)
   (R : A -> B -> Type)
