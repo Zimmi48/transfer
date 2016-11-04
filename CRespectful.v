@@ -81,13 +81,13 @@ Section Declarations1.
   (** ** Straightforward properties *)
   
   Lemma fliptotal : righttotal (flip R) <-> lefttotal R.
-  Proof. flipdecl. Qed.
+  Proof. flipdecl. Defined.
 
   Lemma flipbitotal : bitotal (flip R) <-> bitotal R.
-  Proof. flipdecl. Qed.
+  Proof. flipdecl. Defined.
   
   Lemma bitotal_from_right_and_left_total : righttotal R -> lefttotal R -> bitotal R.
-  Proof. flipdecl. Qed.
+  Proof. flipdecl. Defined.
 
   (** ** More complex properties *)
   
@@ -101,13 +101,13 @@ Section Declarations1.
     - apply (Hsurj (fun _ => True) _); trivial.
       intros x x' Rx _.
       now exists x.
-  Qed.
+  Defined.
 
   Lemma bitotal_decl_recip1 : bitotal R -> (forall x' : B, { x : A & R x x' }).
   Proof.
     intro bitotal.
     apply (bitotal (fun _ => True) (fun x' => { x : A & R x x'})); firstorder.
-  Qed.
+  Defined.
 
   Lemma righttotal_from_bitotal : bitotal R -> righttotal R.
   Proof.
@@ -115,26 +115,26 @@ Section Declarations1.
     apply righttotal_decl.
     apply bitotal_decl_recip1.
     assumption.
-  Qed.
+  Defined.
 
   (** * Uniqueness declarations *)
 
   (** ** Straightforward properties *)
   
   Lemma flipunique : rightunique (flip R) <-> leftunique R.
-  Proof. flipdecl. Qed.
+  Proof. flipdecl. Defined.
 
   Lemma flipbiunique : biunique (flip R) <-> biunique R.
-  Proof. flipdecl. Qed.
+  Proof. flipdecl. Defined.
 
   Lemma biunique_from_right_and_left_unique : rightunique R -> leftunique R -> biunique R.
-  Proof. flipdecl. Qed.
+  Proof. flipdecl. Defined.
 
   Lemma rightunique_from_biunique : biunique R -> rightunique R.
-  Proof. flipdecl. Qed.
+  Proof. flipdecl. Defined.
 
   Lemma leftunique_from_biunique : biunique R -> leftunique R.
-  Proof. flipdecl. Qed.
+  Proof. flipdecl. Defined.
 
   (** ** More complex properties *)
 
@@ -148,7 +148,7 @@ Section Declarations1.
     - intros rightunique x **.
       generalize (eq_refl x).
       now apply rightunique.
-  Qed.
+  Defined.
 
   Theorem biunique_decl_recip1 : biunique R -> forall x x' y', R x x' -> R x y' -> x' = y'.
   Proof.
@@ -156,7 +156,7 @@ Section Declarations1.
     apply rightunique_decl.
     apply rightunique_from_biunique.
     assumption.
-  Qed.
+  Defined.
 
   Lemma generic_right_covered_decl :
     ((R ##> arrow) ##> arrow) forall_def (fun P' => forall y, { x : A & R x y } -> P' y).
@@ -165,7 +165,7 @@ Section Declarations1.
     intros P P' Prel HP x' (x & xrel).
     apply (Prel _ _ xrel).
     apply HP.
-  Qed.
+  Defined.
 
 End Declarations1.
 
@@ -184,7 +184,7 @@ Section Declarations2.
     eapply iffT_Transitive; [ | exact (fliptotal _) ].
     eapply iffT_Transitive; [ | exact (righttotal_decl _) ].
     reflexivity.
-  Qed.
+  Defined.
   
   Lemma bitotal_decl_recip2 : bitotal R -> (forall x : A, { x' : B & R x x' }).
   Proof.
@@ -192,7 +192,7 @@ Section Declarations2.
     apply bitotal_decl_recip1.
     apply flipbitotal.
     assumption.
-  Qed.
+  Defined.
 
   Lemma lefttotal_from_bitotal : bitotal R -> lefttotal R.
   Proof.
@@ -201,7 +201,7 @@ Section Declarations2.
     apply righttotal_from_bitotal.
     apply flipbitotal.
     assumption.
-  Qed.
+  Defined.
 
   Lemma generic_left_covered_decl :
     ((R ##> flip arrow) ##> flip arrow) (fun P => forall x, { y : B & R x y } -> P x) forall_def.
@@ -211,7 +211,7 @@ Section Declarations2.
     intros P P' Prel HP x' (x & xrel).
     apply (Prel _ _ xrel).
     apply HP.
-  Qed.
+  Defined.
 
   (** ** Properties derived from their right and left-equivalent *)
 
@@ -224,7 +224,7 @@ Section Declarations2.
     apply righttotal_decl in righttotal.
     apply lefttotal_decl in lefttotal.
     now apply bitotal_from_right_and_left_total.
-  Qed.
+  Defined.
 
   (** *** Generic property for non-total relations *)
   
@@ -240,7 +240,7 @@ Section Declarations2.
       firstorder.
     - apply generic_left_covered_decl.
       firstorder.
-  Qed.
+  Defined.
     
   (** ** More complex properties *)
 
@@ -262,7 +262,7 @@ Section Declarations2.
       apply rely.
       apply relx.
       reflexivity.
-  Qed.
+  Defined.
 
   (** * Uniqueness declarations *)
 
@@ -274,14 +274,14 @@ Section Declarations2.
     eapply iffT_Transitive; [ | exact (flipunique _) ].
     eapply iffT_Transitive; [ | exact (rightunique_decl _) ].
     flipdecl.
-  Qed.
+  Defined.
 
   Theorem biunique_decl_recip2 : biunique R -> forall x y y', R x y' -> R y y' -> x = y.
   Proof.
     intros biunique *.
     apply flipbiunique in biunique.
     now apply (biunique_decl_recip1 biunique).
-  Qed.
+  Defined.
 
   (** ** Properties derived from their right and left-equivalent *)
   
@@ -294,7 +294,7 @@ Section Declarations2.
     apply biunique_from_right_and_left_unique.
     - now apply rightunique_decl.
     - now apply leftunique_decl.
-  Qed.
+  Defined.
     
   (** ** More complex properties *)  
 
@@ -310,7 +310,7 @@ Section Declarations2.
     apply relP in Hx.
     apply relQ in Hx2.
     firstorder.
-  Qed.
+  Defined.
 
 End Declarations2.
 
@@ -330,7 +330,7 @@ Section Declarations3.
     eapply iffT_Transitive; [ symmetry; exact (flipunique _) | ].
     eapply iffT_Transitive; [ exact (righttotal_predicate _) | ].
     flipdecl.
-  Qed.
+  Defined.
 
   (** ** Properties derived from their right and left-equivalent *)
 
@@ -351,7 +351,7 @@ Section Declarations3.
         | apply lefttotal_predicate;
           apply lefttotal_from_bitotal ];
         exact bitotal.
-  Qed.
+  Defined.
 
   (* ** A lemma that is not a generalization of the previous one unfortunately. *)
   
@@ -380,7 +380,7 @@ Section Declarations3.
       rewrite <- leftunique_R.
       + destruct (lefttotal_S (f x)); auto.
       + destruct (righttotal_R x'); auto.
-  Qed.
+  Defined.
 
   (** * Uniqueness declarations *)
 
@@ -396,7 +396,7 @@ Section Declarations3.
     intros P P' ? Q Q' ?.
     specialize (lefttotal P' P ltac:(flipdecl) Q' Q ltac:(flipdecl)).
     assumption.
-  Qed.
+  Defined.
 
   (** ** Properties derived from their right and left-equivalent *)
 
@@ -411,6 +411,6 @@ Section Declarations3.
       [ apply (rightunique_predicate righttotal relP relQ)
       | apply (leftunique_predicate lefttotal relP relQ) ];
       assumption.
-  Qed.
+  Defined.
 
 End Declarations3.

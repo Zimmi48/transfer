@@ -13,34 +13,34 @@ Proof.
   split; intros H1 H2.
   exact (g (H1 (f' H2))).
   exact (g' (H1 (f H2))).
-Qed.
+Defined.
 
 Lemma impl_impl : (iff ##> iff ##> iff) impl impl.
-Proof ltac:(firstorder).
+Proof. firstorder. Defined.
 
 Lemma impl_impl' : (iff ##> iff ##> iffT) impl impl.
-Proof ltac:(firstorder).
+Proof. firstorder. Defined.
 
 Lemma iff_iff : (iff ##> iff ##> iff) iff iff.
-Proof ltac:(firstorder).
+Proof. firstorder. Defined.
 
 Lemma iff_iff' : (iff ##> iff ##> iffT) iff iff.
-Proof ltac:(firstorder).
+Proof. firstorder. Defined.
 
 Lemma prod_prod : (iffT ##> iffT ##> iffT) prod prod.
-Proof ltac:(firstorder).
+Proof. firstorder. Defined.
 
 Lemma and_and : (iff ##> iff ##> iff) and and.
-Proof ltac:(firstorder).
+Proof. firstorder. Defined.
 
 Lemma and_and' : (iff ##> iff ##> iffT) and and.
-Proof ltac:(firstorder).
+Proof. firstorder. Defined.
 
 Lemma or_or : (iff ##> iff ##> iff) or or.
-Proof ltac:(firstorder).
+Proof. firstorder. Defined.
 
 Lemma or_or' : (iff ##> iff ##> iffT) or or.
-Proof ltac:(firstorder).
+Proof. firstorder. Defined.
 
 Lemma eq_eq (A : Type) : (eq ##> eq ##> iff) (@eq A) (@eq A).
 Proof.
@@ -49,7 +49,7 @@ Proof.
     assumption.
   + rewrite Hx, Hy.
     assumption.
-Qed.
+Defined.
 
 Lemma eq_eq' (A : Type) : (eq ##> eq ##> iffT) (@eq A) (@eq A).
 Proof.
@@ -57,4 +57,4 @@ Proof.
   intros x x' Hx y y' Hy; split; intro Heq.
   now rewrite <- Hx, <- Hy.
   now rewrite Hx, Hy.
-Qed.
+Defined.

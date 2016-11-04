@@ -11,10 +11,10 @@ Require Import Coq.NArith.Nnat.
 Definition natN x x' := N.of_nat x = x'.
 
 Instance natN_nb : forall n : nat, Related natN n (N.of_nat n) | 10.
-Proof. reflexivity. Qed.
+Proof. reflexivity. Defined.
 
 Instance natN_nb' : forall n : N, Related natN (N.to_nat n) n | 10.
-Proof. apply N2Nat.id. Qed.
+Proof. apply N2Nat.id. Defined.
 
 (* Totality of natN *)
 
@@ -27,7 +27,7 @@ Proof.
   + apply (Hf (N.to_nat x)); trivial.
     apply N2Nat.id.
   + apply Hf with (e' := N.of_nat x); trivial.
-Qed.
+Defined.
 
 Module N2Nat_transfer.
 
@@ -39,7 +39,7 @@ Proof.
   intros H.
   rewrite <- H.
   apply Nat2N.id.
-Qed.
+Defined.
 
 Lemma natN_bis_recip x x' : N.to_nat x' = x -> natN x x'.
 Proof.
@@ -47,7 +47,7 @@ Proof.
   intros H.
   rewrite <- H.
   apply N2Nat.id.
-Qed.
+Defined.
 
 Ltac unfold_natN_bis :=
   let n' := fresh "n" in
@@ -75,12 +75,12 @@ Ltac solve thm :=
 Instance inj : Related (natN ##> natN ##> arrow) eq eq.
 Proof.
   solve inj.
-Qed.
+Defined.
 
 Instance inj_iff : Related (natN ##> natN ##> iff) eq eq.
 Proof.
   solve inj_iff.
-Qed.
+Defined.
 
 Instance inj_iffT : Related (natN ##> natN ##> iffT) eq eq.
 Proof.
@@ -93,55 +93,55 @@ Proof.
   - rewrite <- relm.
     intros -> .
     now apply Nat2N.inj.
-Qed.
+Defined.
 
 (* inj_double, inj_succ_double *)
 
 Instance inj_succ : Related (natN ##> natN) S N.succ.
 Proof.
   solve inj_succ.
-Qed.
+Defined.
 
 Instance inj_add : Related (natN ##> natN ##> natN) Nat.add N.add.
 Proof.
   solve inj_add.
-Qed.
+Defined.
 
 Instance inj_mul : Related (natN ##> natN ##> natN) Nat.mul N.mul.
 Proof.
   solve inj_mul.
-Qed.
+Defined.
 
 Instance inj_sub : Related (natN ##> natN ##> natN) Nat.sub N.sub.
 Proof.
   solve inj_sub.
-Qed.
+Defined.
 
 Instance inj_pred : Related (natN ##> natN) Nat.pred N.pred.
 Proof.
   solve inj_pred.
-Qed.
+Defined.
 
 Instance inj_div2 : Related (natN ##> natN) Nat.div2 N.div2.
 Proof.
   solve inj_div2.
-Qed.
+Defined.
 
 Instance inj_compare :
   Related (natN ##> natN ##> eq) Nat.compare N.compare.
 Proof.
   solve inj_compare.
-Qed.
+Defined.
 
 Instance inj_max : Related (natN ##> natN ##> natN) Nat.max N.max.
 Proof.
   solve inj_max.
-Qed.
+Defined.
 
 Instance inj_min : Related (natN ##> natN ##> natN) Nat.min N.min.
 Proof.
   solve inj_min.
-Qed.
+Defined.
 
 Instance inj_iter :
   forall {A} (f : A -> A) (x : A),
@@ -149,7 +149,7 @@ Instance inj_iter :
     (fun n => Nat.iter n f x) (fun n => N.iter n f x).
 Proof.
   solve inj_iter.
-Qed.
+Defined.
 
 End N2Nat_transfer.
 
@@ -177,7 +177,7 @@ Ltac solve thm :=
 Instance inj : Related (natN ##> natN ##> flip impl) eq eq.
 Proof.
   solve inj.
-Qed.
+Defined.
 
 (* The rest would mean proving all the same theorems again,
    so we won't do it although that can be done. *)

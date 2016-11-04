@@ -24,7 +24,7 @@ Theorem modulo `{class : Related _ _ impl t u} : t -> u.
 Proof.
   lazy beta delta in class.
   tauto.
-Qed.
+Defined.
 
 Check modulo.
 
@@ -38,7 +38,7 @@ Theorem modulo' `{class : Related _ _ arrow t u} : t -> u.
 Proof.
   lazy beta delta in class.
   tauto.
-Qed.
+Defined.
 
 Check modulo'.
 
@@ -124,38 +124,29 @@ Instance all_rule
 
 (* Subrelations *)
 
-Instance sub_impl_arrow : HeteroSubrel impl arrow.
-Proof ltac:(firstorder).
+Instance sub_impl_arrow : HeteroSubrel impl arrow := ltac:(firstorder).
 
-Instance sub_flip_impl_flip_arrow : HeteroSubrel (flip impl) (flip arrow).
-Proof ltac:(firstorder).
+Instance sub_flip_impl_flip_arrow : HeteroSubrel (flip impl) (flip arrow) := ltac:(firstorder).
 
-Instance sub_iff_iffT : HeteroSubrel iff iffT.
-Proof ltac:(firstorder).
+Instance sub_iff_iffT : HeteroSubrel iff iffT := ltac:(firstorder).
 
-Instance sub_iffT_arrow : HeteroSubrel iffT arrow.
-Proof iffT_arrow_subrelation.
+Instance sub_iffT_arrow : HeteroSubrel iffT arrow := iffT_arrow_subrelation.
 
-Instance sub_iffT_flip_arrow : HeteroSubrel iffT (flip arrow).
-Proof iffT_flip_arrow_subrelation.
+Instance sub_iffT_flip_arrow : HeteroSubrel iffT (flip arrow) := iffT_flip_arrow_subrelation.
 
-Instance sub_iff_impl : HeteroSubrel iff impl.
-Proof ltac:(firstorder).
+Instance sub_iff_impl : HeteroSubrel iff impl := ltac:(firstorder).
 
-Instance sub_iff_flip_impl : HeteroSubrel iff (flip impl).
-Proof ltac:(firstorder).
+Instance sub_iff_flip_impl : HeteroSubrel iff (flip impl) := ltac:(firstorder).
 
 Instance sub_respectful_left
   (A B C D : Type)
   (R1 R2 : A -> B -> Type) (R' : C -> D -> Type) :
-  HeteroSubrel R1 R2 -> HeteroSubrel (R2 ##> R') (R1 ##> R').
-Proof ltac:(firstorder).
+  HeteroSubrel R1 R2 -> HeteroSubrel (R2 ##> R') (R1 ##> R') := ltac:(firstorder).
 
 Instance sub_respectful_right
   (A B C D : Type)
   (R : A -> B -> Type) (R1' R2' : C -> D -> Type) :
-  HeteroSubrel R1' R2' -> HeteroSubrel (R ##> R1') (R ##> R2').
-Proof ltac:(firstorder).
+  HeteroSubrel R1' R2' -> HeteroSubrel (R ##> R1') (R ##> R2') := ltac:(firstorder).
 
 (* Predefined instances *)
 
@@ -172,11 +163,9 @@ Ltac related_tauto :=
   related_basics;
   tauto.
 
-Instance iffT_reflexivity : forall (A : Type), Related iffT A A | 10.
-Proof ltac:(firstorder).
+Instance iffT_reflexivity : forall (A : Type), Related iffT A A | 10 := ltac:(firstorder).
 
-Instance iff_reflexivity : forall (A : Prop), Related iff A A | 10.
-Proof ltac:(related_tauto).
+Instance iff_reflexivity : forall (A : Prop), Related iff A A | 10 := ltac:(related_tauto).
 
 (*
 Instance true_rule : Related iff True True.
@@ -186,35 +175,26 @@ Instance false_rule : Related iff False False.
 Proof ltac:(related_tauto).
 *)
 
-Instance arrow_transfer_rule : Related (iffT ##> iffT ##> iffT) arrow arrow.
-Proof arrow_arrow.
+Instance arrow_transfer_rule : Related (iffT ##> iffT ##> iffT) arrow arrow := arrow_arrow.
 
-Instance impl_transfer_rule : Related (iff ##> iff ##> iff) impl impl.
-Proof impl_impl.
+Instance impl_transfer_rule : Related (iff ##> iff ##> iff) impl impl := impl_impl.
 
-Instance iff_rule : Related (iff ##> iff ##> iff) iff iff.
-Proof iff_iff.
+Instance iff_rule : Related (iff ##> iff ##> iff) iff iff := iff_iff.
 
-Instance prod_rule : Related (iffT ##> iffT ##> iffT) prod prod.
-Proof prod_prod.
+Instance prod_rule : Related (iffT ##> iffT ##> iffT) prod prod := prod_prod.
 
-Instance and_rule : Related (iff ##> iff ##> iff) and and.
-Proof and_and.
+Instance and_rule : Related (iff ##> iff ##> iff) and and := and_and.
 
-Instance or_rule : Related (iff ##> iff ##> iff) or or.
-Proof or_or.
+Instance or_rule : Related (iff ##> iff ##> iff) or or := or_or.
 
 Instance eq_rule :
   forall (A : Type),
-  Related (eq ##> eq ##> iff) (@eq A) (@eq A).
-Proof eq_eq.
+  Related (eq ##> eq ##> iff) (@eq A) (@eq A) := eq_eq.
 
 Instance eq_reflexivity :
-  forall (A : Set) (x : A), Related eq x x.
-Proof ltac:(reflexivity).
+  forall (A : Set) (x : A), Related eq x x := ltac:(reflexivity).
 
-Instance not_rule : Related (iff ##> iff) not not.
-Proof ltac:(related_tauto).
+Instance not_rule : Related (iff ##> iff) not not := ltac:(related_tauto).
 
 (** ** Totality declarations *)
 
@@ -228,7 +208,7 @@ Proof.
   apply Respectful.bitotal_decl.
   now apply bitotal_decl_recip1.
   now apply bitotal_decl_recip2.
-Qed.
+Defined.
 
 Instance bitotal_predicate_rule
   (A B : Type)
@@ -238,7 +218,7 @@ Instance bitotal_predicate_rule
 Proof.
   unfold Related in *.
   now apply Respectful.total_predicate.
-Qed.
+Defined.
 
 Instance bitotal_predicate_rule'
   (A B : Type)
@@ -248,4 +228,4 @@ Instance bitotal_predicate_rule'
 Proof.
   unfold Related in *.
   now apply total_predicate.
-Qed.
+Defined.
