@@ -3,51 +3,44 @@ Require Export Coq.Program.Basics Coq.Classes.CMorphisms.
 
 Set Universe Polymorphism.
 
-Typeclasses Opaque forall_def arrow flip.
+(*Typeclasses Opaque forall_def arrow flip.*)
 (** universe-polymorphic forall_def and arrow are not declared as opaque in the library *)
 
-Class Related {A A' : Type} (R : A -> A' -> Type) (t : A) (t' : A') :=
-  is_related : R t t'.
-
-Instance arrow_refl : forall (T : Type), Related arrow T T | 0.
+Lemma arrow_refl : forall (T : Type), arrow T T.
 Proof.
   lazy beta delta.
   tauto.
 Defined.
 
-Instance flip_rule : forall (A A' : Type) (R : A -> A' -> Type) (t : A) (t' : A'),
-    Related R t t' ->
-    Related (flip R) t' t.
+Hint Resolve arrow_refl | 0 : related.
+
+Lemma flip_rule :
+  forall (A A' : Type) (R : A -> A' -> Type) (t : A) (t' : A'),
+    R t t' ->
+    (flip R) t' t.
 Proof.
   lazy beta delta.
   tauto.
 Defined.
 
-Instance flip_rule' : forall (A A' : Type) (R : A -> A' -> Prop) (t : A) (t' : A'),
-    Related R t t' ->
-    Related (flip R) t' t.
+Hint Resolve flip_rule : related.
+
+Inductive HasProof (T : Type) := proof : T -> HasProof T.
+
+Hint Extern 0 (HasProof _) => split; shelve : related.
+
+Lemma apply_rule : forall (T U V : Type), HasProof T -> arrow U V -> arrow (T -> U) V.
 Proof.
+  intros ? ? ? [].
   lazy beta delta.
   tauto.
 Defined.
 
-Class HasProof (T : Type) := proof : T.
+Hint Resolve apply_rule : related.
 
-Hint Extern 0 (HasProof _) => lazy beta delta; shelve : typeclass_instances.
-
-Instance apply_rule : forall (T U V : Type), HasProof T -> Related arrow U V -> Related arrow (T -> U) V.
-Proof.
-  lazy beta delta.
-  tauto.
-Defined.
-(*
 Ltac apply' proof :=
-  notypeclasses refine ((_ : Related arrow _ _) proof);
-  unshelve notypeclasses refine (ltac:(typeclasses eauto)).
-*)
-Ltac apply' proof :=
-  notypeclasses refine ((_ : Related arrow _ _) proof);
-  unshelve typeclasses eauto.
+  notypeclasses refine ((_ : arrow _ _) proof);
+  unshelve typeclasses eauto with nocore related.
 
 Tactic Notation "apply" constr(x) := apply' x.
 
@@ -61,44 +54,54 @@ Lemma test1 : forall (A B : Prop), A -> (A -> A -> B) -> B.
 Proof.
   intros.
   apply' H0.
-  all: [> assumption | assumption].
+  all:[> assumption | assumption].
 Defined.
 
 Eval compute in test1.
 
-Instance arrow_trans : forall (T U V : Type),
-    Related arrow T U ->
-    Related arrow U V ->
-    Related arrow T V | 100000.
+Lemma arrow_trans :
+  forall (T U V : Type),
+    arrow T U ->
+    arrow U V ->
+    arrow T V.
 Proof.
   lazy beta delta.
   tauto.
 Defined.
 
-Instance and_proj1 : forall (P P' Q : Prop),
-    Related arrow P P' ->
-    Related arrow (P /\ Q) P'.
+Hint Resolve arrow_trans | 100000 : related.
+
+Lemma and_proj1 :
+  forall (P P' Q : Prop),
+    arrow P P' ->
+    arrow (P /\ Q) P'.
 Proof.
   lazy beta delta.
   tauto.
 Defined.
 
-Instance and_proj2 : forall (P Q Q' : Prop),
-    Related arrow Q Q' ->
-    Related arrow (P /\ Q) Q'.
+Hint Resolve and_proj1 : related.
+
+Lemma and_proj2 :
+  forall (P Q Q' : Prop),
+    arrow Q Q' ->
+    arrow (P /\ Q) Q'.
 Proof.
   lazy beta delta.
   tauto.
 Defined.
 
-Hint Unfold iff : typeclass_instances.
+Hint Resolve and_proj2 : related.
 
-Hint Cut [(_*) arrow_trans arrow_trans] : typeclass_instances.
+Hint Unfold iff : related.
+
+Hint Cut [(_*) arrow_trans (_*) arrow_trans] : related.
 
 Lemma test2 : forall (A B : Prop), A -> (A <-> B) -> B.
 Proof.
   intros.
-  apply' H0.
+  Typeclasses eauto := debug.
+  Fail apply' H0.
   assumption.
 Defined.
 
@@ -107,12 +110,11 @@ Eval compute in test2.
 Lemma test3 : forall (A B : Prop), B -> (B -> A <-> B) -> A.
 Proof.
   intros.
-  apply' H0.
-  all: [> assumption | assumption ].
+  apply' H0; assumption.
 Defined.
 
 Eval compute in test3.
-(*
+
 Definition respectful_arrow
   {A B C D: Type}
   (R : A -> B -> Type) (R' : C -> D -> Type)
@@ -153,16 +155,9 @@ Proof.
   refine (eq_trans _ H3).
   exact H1.
 Qed.
-*)
-
-Instance eq_sym : forall (A : Type) (x y : A), Related arrow (x = y) (y = x).
-Proof.
-  exact eq_sym.
-Defined.
 
 Lemma test4 : 0 = 1 -> 1 = 0.
   intros.
-  apply' H.
-Defined.
+  Typeclasses eauto := debug.
+  Fail apply' H.
 
-Eval lazy beta delta [test4 eq_sym] in test4.
