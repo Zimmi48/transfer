@@ -12,52 +12,78 @@ Proof.
   tauto.
 Defined.
 
-Hint Resolve arrow_refl | 0 : related.
+Hint Extern 0 (arrow _ _) => refine (arrow_refl _) : related.
 
-Lemma flip_rule :
-  forall (A A' : Type) (R : A -> A' -> Type) (t : A) (t' : A'),
-    R t t' ->
-    (flip R) t' t.
+(*Hint Unfold flip : related.*)
+
+Lemma apply_rule :
+  forall {T V : Type} {U : T -> Type},
+  forall (t : T), arrow (U t) V -> arrow (forall x : T, U x) V.
 Proof.
+  intros *.
   lazy beta delta.
-  tauto.
+  intros H1 H2.
+  apply H1.
+  apply H2.
 Defined.
 
-Hint Resolve flip_rule : related.
-
-Inductive HasProof (T : Type) := proof : T -> HasProof T.
-
-Hint Extern 0 (HasProof _) => split; shelve : related.
-
-Lemma apply_rule : forall (T U V : Type), HasProof T -> arrow U V -> arrow (T -> U) V.
-Proof.
-  intros ? ? ? [].
-  lazy beta delta.
-  tauto.
-Defined.
-
-Hint Resolve apply_rule : related.
+Hint Extern 0 (arrow (forall x : ?T, _) _) =>
+  let t := fresh x in evar (t: T); refine (apply_rule t _) : related.
 
 Ltac apply' proof :=
-  notypeclasses refine ((_ : arrow _ _) proof);
+  refine ((_ : arrow _ _) proof);
   unshelve typeclasses eauto with nocore related.
+(* Attention: typeclasses eauto even with nocore is able to use the hypotheses
+   of the context. It does not here, because of the trick with HasProof and the
+   immediate shelving of the subgoal. But hypotheses talking about arrow could
+   still influence the search. *)
 
 Tactic Notation "apply" constr(x) := apply' x.
+(* Shadowing of the old apply tactic. *)
+(* The Tactic Notation is also useful for better error message when the applied
+   lemma does not exist. *)
 
 Lemma test0 : forall (A B : Prop), (A -> B) -> B.
 Proof.
   intros.
-  apply' H.
+  apply H.
+  all:[> now_show A].
 Abort.
 
 Lemma test1 : forall (A B : Prop), A -> (A -> A -> B) -> B.
 Proof.
   intros.
-  apply' H0.
-  all:[> assumption | assumption].
+  apply H0.
+  all:[> assumption | assumption ].
 Defined.
 
 Eval compute in test1.
+
+Lemma under_binders : forall (A : Type) (f g : A -> Type),
+    (forall x : A, arrow (f x) (g x)) ->
+    arrow (forall x : A, f x) (forall x : A, g x).
+Proof.
+  lazy beta delta.
+  intros * H1 H2 *.
+  refine (H1 _ _).
+  refine (H2 _).
+Defined.
+
+Hint Resolve under_binders : related.
+
+Lemma test_add_comm : forall (x y : nat), x + y = y + x.
+Proof.
+  apply nat_ind; subst x; lazy beta; swap 1 2; [| clear x0; intros x IHx ].
+  - simpl.
+    apply plus_n_O.
+  - intro y.
+    etransitivity.
+    apply plus_Sn_m.
+    etransitivity.
+    2: apply plus_n_Sm.
+    apply f_equal; subst x0 x1 x2 x3 x4.
+    apply IHx.
+Qed.
 
 Lemma arrow_trans :
   forall (T U V : Type),
@@ -80,8 +106,6 @@ Proof.
   tauto.
 Defined.
 
-Hint Resolve and_proj1 : related.
-
 Lemma and_proj2 :
   forall (P Q Q' : Prop),
     arrow Q Q' ->
@@ -91,17 +115,16 @@ Proof.
   tauto.
 Defined.
 
-Hint Resolve and_proj2 : related.
+Hint Resolve and_proj1 and_proj2 : related.
 
-Hint Unfold iff : related.
+Hint Transparent iff : related.
 
-Hint Cut [(_*) arrow_trans (_*) arrow_trans] : related.
+Hint Cut [(_*) arrow_trans arrow_trans] : related.
 
 Lemma test2 : forall (A B : Prop), A -> (A <-> B) -> B.
 Proof.
   intros.
-  Typeclasses eauto := debug.
-  Fail apply' H0.
+  apply H0.
   assumption.
 Defined.
 
@@ -110,54 +133,25 @@ Eval compute in test2.
 Lemma test3 : forall (A B : Prop), B -> (B -> A <-> B) -> A.
 Proof.
   intros.
-  apply' H0; assumption.
+  apply H0.
+  all: [> assumption | assumption ].
 Defined.
 
 Eval compute in test3.
 
-Definition respectful_arrow
-  {A B C D: Type}
-  (R : A -> B -> Type) (R' : C -> D -> Type)
-  (f : A -> C) (f' : B -> D) : Type :=
-  forall e e', R e e' -> R' (f e) (f' e').
-
-Notation " R ==> R' " :=
-  (respectful_arrow R R')
-    (right associativity, at level 55) : type_scope.
-
-Instance app_rule :
-  forall (A A' B B' : Type) (R : A -> B -> Type) (R' : A' -> B' -> Type)
-    (f : A -> A') (g : B -> B') (t : A) (u : B),
-  Related (R ==> R') f g ->
-  Related R t u ->
-  Related R' (f t) (g u).
+Lemma eq_sym : forall (A : Type) (x y : A), arrow (x = y) (y = x).
 Proof.
-  lazy beta delta.
-  intros * Hfun Harg.
-  exact (Hfun _ _ Harg).
+  exact eq_sym.
 Defined.
 
-(*
-Instance eq_sym : forall (A : Type) (x y : A),
-    Related eq x y ->
-    Related eq y x.
-Proof.
-  easy.
-Defined.
-*)
-
-Instance eq_sym : forall (A : Type),
-  Related (flip eq ==> @eq A ==> arrow) eq eq.
-Proof.
-  lazy beta delta.
-  intros * H1 * H2 H3.
-  refine (eq_trans _ H2).
-  refine (eq_trans _ H3).
-  exact H1.
-Qed.
+Hint Resolve eq_sym : related.
 
 Lemma test4 : 0 = 1 -> 1 = 0.
   intros.
-  Typeclasses eauto := debug.
-  Fail apply' H.
+  apply H.
+Defined.
+
+Eval lazy beta delta [test4 eq_sym] in test4.
+
+
 

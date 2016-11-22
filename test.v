@@ -15,6 +15,7 @@ Proof.
   tauto.
 Defined.
 
+(*
 Instance flip_rule : forall (A A' : Type) (R : A -> A' -> Type) (t : A) (t' : A'),
     Related R t t' ->
     Related (flip R) t' t.
@@ -30,7 +31,7 @@ Proof.
   lazy beta delta.
   tauto.
 Defined.
-
+*)
 Class HasProof (T : Type) := proof : T.
 
 Hint Extern 0 (HasProof _) => lazy beta delta; shelve : typeclass_instances.
@@ -40,11 +41,7 @@ Proof.
   lazy beta delta.
   tauto.
 Defined.
-(*
-Ltac apply' proof :=
-  notypeclasses refine ((_ : Related arrow _ _) proof);
-  unshelve notypeclasses refine (ltac:(typeclasses eauto)).
-*)
+
 Ltac apply' proof :=
   notypeclasses refine ((_ : Related arrow _ _) proof);
   unshelve typeclasses eauto.
@@ -61,7 +58,7 @@ Lemma test1 : forall (A B : Prop), A -> (A -> A -> B) -> B.
 Proof.
   intros.
   apply' H0.
-  all: [> assumption | assumption].
+  all: [> assumption | assumption ].
 Defined.
 
 Eval compute in test1.
@@ -112,6 +109,7 @@ Proof.
 Defined.
 
 Eval compute in test3.
+
 (*
 Definition respectful_arrow
   {A B C D: Type}
