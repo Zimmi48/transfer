@@ -1,10 +1,7 @@
 
 Require Export Coq.Program.Basics Coq.Classes.CMorphisms.
 
-Set Universe Polymorphism.
-
-(*Typeclasses Opaque forall_def arrow flip.*)
-(** universe-polymorphic forall_def and arrow are not declared as opaque in the library *)
+(*Set Universe Polymorphism.*)
 
 Lemma arrow_refl : forall (T : Type), arrow T T.
 Proof.
@@ -15,6 +12,8 @@ Defined.
 Hint Extern 0 (arrow _ _) => refine (arrow_refl _) : related.
 
 (*Hint Unfold flip : related.*)
+
+(*Definition apply_to {T : Type} (U : T -> Type) (t : T) := U t.*)
 
 Lemma apply_rule :
   forall {T V : Type} {U : T -> Type},
@@ -27,8 +26,8 @@ Proof.
   apply H2.
 Defined.
 
-Hint Extern 0 (arrow (forall x : ?T, _) _) =>
-  let t := fresh x in evar (t: T); refine (apply_rule t _) : related.
+Hint Extern 0 (arrow (forall _ : _, _) _) => refine (apply_rule _ _); [ shelve |] : related.
+Hint Extern 0 (arrow (forall _ : _, _) _) => refine (apply_rule _ _); [] : related.
 
 Ltac apply' proof :=
   refine ((_ : arrow _ _) proof);
@@ -73,15 +72,14 @@ Hint Resolve under_binders : related.
 
 Lemma test_add_comm : forall (x y : nat), x + y = y + x.
 Proof.
-  apply nat_ind; subst x; lazy beta; swap 1 2; [| clear x0; intros x IHx ].
-  - simpl.
-    apply plus_n_O.
+  apply nat_ind; lazy beta; swap 1 2; [| intros x IHx ].
+  - apply plus_n_O.
   - intro y.
     etransitivity.
     apply plus_Sn_m.
     etransitivity.
     2: apply plus_n_Sm.
-    apply f_equal; subst x0 x1 x2 x3 x4.
+    apply f_equal.
     apply IHx.
 Qed.
 
