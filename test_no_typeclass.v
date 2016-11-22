@@ -1,4 +1,3 @@
-
 Require Export Coq.Program.Basics Coq.Classes.CMorphisms.
 
 (*Set Universe Polymorphism.*)
@@ -33,8 +32,8 @@ Ltac apply' proof :=
   refine ((_ : arrow _ _) proof);
   unshelve typeclasses eauto with nocore related.
 (* Attention: typeclasses eauto even with nocore is able to use the hypotheses
-   of the context. It does not here, because of the trick with HasProof and the
-   immediate shelving of the subgoal. But hypotheses talking about arrow could
+   of the context. It does not here, because we immediately shelve any premise
+   that we want the user to solve. But hypotheses talking about arrow could
    still influence the search. *)
 
 Tactic Notation "apply" constr(x) := apply' x.
@@ -72,6 +71,7 @@ Hint Resolve under_binders : related.
 
 Lemma test_add_comm : forall (x y : nat), x + y = y + x.
 Proof.
+  (* apply nat_ind normally generates three goals but isn't this behavior better? *)
   apply nat_ind; lazy beta; swap 1 2; [| intros x IHx ].
   - apply plus_n_O.
   - intro y.
