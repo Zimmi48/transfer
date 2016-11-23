@@ -2,10 +2,6 @@ Require Export Coq.Program.Basics Coq.Classes.CMorphisms.
 
 (*Set Universe Polymorphism.*)
 
-Hint Unfold arrow : related.
-(* To allow views to be given without arrow, such as eq_sym.
-   But might create a larger search space. *)
-
 Lemma arrow_refl : forall (T : Type), arrow T T.
 Proof.
   lazy beta delta.
@@ -29,12 +25,13 @@ Proof.
   apply H2.
 Defined.
 
-Hint Extern 0 (arrow (forall _ : _, _) _) => refine (apply_rule _ _); [ shelve |] : related.
+Hint Extern 0 (arrow (forall _ : _, _) _) => refine (apply_rule _ _); [ (*match goal with |- ?g => idtac g end;*) shelve |] : related.
 Hint Extern 0 (arrow (forall _ : _, _) _) => refine (apply_rule _ _); [] : related.
 
 Ltac apply' proof :=
   refine ((_ : arrow _ _) proof);
-  unshelve typeclasses eauto with nocore related.
+  unshelve typeclasses eauto with nocore related;
+  shelve_unifiable.
 (* Attention: typeclasses eauto even with nocore is able to use the hypotheses
    of the context. It does not here, because we immediately shelve any premise
    that we want the user to solve. But hypotheses talking about arrow could
@@ -45,11 +42,21 @@ Tactic Notation "apply" constr(x) := apply' x.
 (* The Tactic Notation is also useful for better error message when the applied
    lemma does not exist. *)
 
-Lemma test0 : forall (A B : Prop), (A -> B) -> B.
+Lemma test0 : forall (A B C : Prop), (A -> B -> C) -> C.
 Proof.
   intros.
+  refine ((_ : arrow _ _) H);
+  unshelve (
+      refine (apply_rule _ _); [ match goal with |- ?g => idtac g end; shelve |];
+      refine (apply_rule _ _); [ match goal with |- ?g => idtac g end; shelve |];
+      refine (arrow_refl _)
+    );
+  [ now_show A | now_show B ].
+  Undo.
   apply H.
-  all:[> now_show A].
+  Fail all:[> now_show A | now_show B ]. (* This should not fail. *)
+  (*Grab Existential Variables.*)
+  (* In 8.5 *)
 Abort.
 
 Lemma test1 : forall (A B : Prop), A -> (A -> A -> B) -> B.
@@ -75,16 +82,16 @@ Hint Resolve under_binders : related.
 
 Lemma test_add_comm : forall (x y : nat), x + y = y + x.
 Proof.
-  (* apply nat_ind normally generates three goals but isn't this behavior better? *)
+  (* not the same behavior because not the same unification algorithm *)
   apply nat_ind; lazy beta; swap 1 2; [| intros x IHx ].
   - apply plus_n_O.
   - intro y.
-    etransitivity.
-    apply plus_Sn_m.
-    etransitivity.
-    2: apply plus_n_Sm.
-    apply f_equal.
-    apply IHx.
+    apply eq_trans; swap 1 2.
+    + apply plus_Sn_m.
+    + apply eq_trans; swap 1 2.
+      * apply f_equal.
+        apply IHx.
+      * apply plus_n_Sm.
 Qed.
 
 Lemma arrow_trans :
@@ -99,6 +106,7 @@ Defined.
 
 Hint Resolve arrow_trans | 100000 : related.
 
+(*
 Lemma and_proj1 :
   forall (P P' Q : Prop),
     arrow P P' ->
@@ -117,10 +125,17 @@ Proof.
   tauto.
 Defined.
 
-(* proj1 cannot be used as a hint *)
 Hint Resolve and_proj1 and_proj2 : related.
+*)
 
-Hint Transparent iff : related.
+(* proj1 cannot be used as a hint with Hint Resolve *)
+Hint Extern 0 (arrow (_ /\ _) _) => refine (@proj1 _ _) : related.
+Hint Extern 0 (arrow (_ /\ _) _) => refine (@proj2 _ _) : related.
+
+(*Hint Transparent iff : related.*)
+(* This transparency hint apparently does not work for patterns *)
+Hint Extern 0 (arrow (_ <-> _) _) => refine (@proj1 _ _) : related.
+Hint Extern 0 (arrow (_ <-> _) _) => refine (@proj2 _ _) : related.
 
 Hint Cut [(_*) arrow_trans arrow_trans] : related.
 
@@ -142,14 +157,42 @@ Defined.
 
 Eval compute in test3.
 
-Hint Resolve eq_sym : related.
+Lemma test4 : forall (A B : Prop), B -> (B -> A /\ B) -> A.
+Proof.
+  intros.
+  apply H0.
+  all: [> assumption ].
+Defined.
 
-Lemma test4 : 0 = 1 -> 1 = 0.
+Eval compute in test4.
+
+(*Hint Unfold arrow : related.*)
+(* To allow views to be given without arrow, such as eq_sym.
+   But might create a larger search space. *)
+
+(* To avoid this problem we rather define the following hint
+   and the associated cut. *)
+(*
+Lemma unfold_arrow : forall (T U : Type), (T -> U) -> arrow T U.
+Proof.
+  tauto.
+Defined.
+
+Hint Resolve unfold_arrow : related.
+
+Hint Cut [_* unfold_arrow _ _] : related.
+*)
+(* This acutally does not help because the cut does not prevent many intros. *)
+
+(* The following solution is better but implies a ugly Hint Extern *)
+Hint Extern 0 (arrow (_ = _) (_ = _)) => refine (@eq_sym _ _ _) : related.
+
+Lemma test5 : 0 = 1 -> 1 = 0.
   intros.
   apply H.
 Defined.
 
-Eval lazy beta delta [test4 eq_sym] in test4.
+Eval lazy beta delta [test5 eq_sym] in test5.
 
 
 
