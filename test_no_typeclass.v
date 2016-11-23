@@ -2,6 +2,10 @@ Require Export Coq.Program.Basics Coq.Classes.CMorphisms.
 
 (*Set Universe Polymorphism.*)
 
+Hint Unfold arrow : related.
+(* To allow views to be given without arrow, such as eq_sym.
+   But might create a larger search space. *)
+
 Lemma arrow_refl : forall (T : Type), arrow T T.
 Proof.
   lazy beta delta.
@@ -113,6 +117,7 @@ Proof.
   tauto.
 Defined.
 
+(* proj1 cannot be used as a hint *)
 Hint Resolve and_proj1 and_proj2 : related.
 
 Hint Transparent iff : related.
@@ -136,11 +141,6 @@ Proof.
 Defined.
 
 Eval compute in test3.
-
-Lemma eq_sym : forall (A : Type) (x y : A), arrow (x = y) (y = x).
-Proof.
-  exact eq_sym.
-Defined.
 
 Hint Resolve eq_sym : related.
 
