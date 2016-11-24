@@ -107,7 +107,7 @@ Proof.
 Qed.
 
 Lemma arrow_trans :
-  forall (T U V : Type),
+  forall {T U V : Type},
     arrow T U ->
     arrow U V ->
     arrow T V.
@@ -117,7 +117,7 @@ Proof.
 Defined.
 
 Lemma arrow_trans' :
-  forall (T U V : Type),
+  forall {T U V : Type},
     arrow U V ->
     arrow T U ->
     arrow T V.
@@ -221,13 +221,7 @@ Eval lazy beta delta [test5 eq_sym] in test5.
 
 Require Import Arith.
 
-Lemma add_comm_view : forall {x y z : nat}, arrow (x + y = z) (y + x = z).
-Proof.
-  intros * <-.
-  refine (Nat.add_comm _ _).
-Defined.
-
-Hint Resolve add_comm_view : related.
+Hint Extern 20 => rewrite Nat.add_comm : related.
 
 Lemma test6 : forall n, n + 0 = n.
 Proof.
@@ -235,4 +229,16 @@ Proof.
   (* and there is an infinite loop is the view is not in the hintdb! *)
 Defined.
 
-Eval lazy beta zeta delta [test6 add_comm_view arrow_trans' under_binders] in test6.
+Eval lazy beta zeta delta [test6 arrow arrow_refl under_binders] in test6.
+
+Lemma test7 : forall (n m : nat) (P : nat -> Prop), P (n + m) -> P (m + n).
+Proof.
+  intros * H.
+  apply H.
+Defined.
+
+Lemma test8 : forall n m, n + m = 0.
+Proof.
+  intros.
+  apply I. (* this infinite loop is probably due to the rewrite *)
+(* something else needs to be found in the lines of the AAC plugin *)
