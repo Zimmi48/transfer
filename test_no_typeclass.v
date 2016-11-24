@@ -233,4 +233,6 @@ Lemma test6 : forall n, n + 0 = n.
 Proof.
   apply (@eq_refl nat). (* problem with implicit arguments *)
   (* and there is an infinite loop is the view is not in the hintdb! *)
-Qed.
+Defined.
+
+Eval lazy beta zeta delta [test6 add_comm_view arrow_trans' under_binders] in test6.
