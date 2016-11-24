@@ -2,13 +2,24 @@ Require Export Coq.Program.Basics Coq.Classes.CMorphisms.
 
 (*Set Universe Polymorphism.*)
 
-Lemma arrow_refl : forall (T : Type), arrow T T.
+(* This complex arrow_refl hint serves the following purpose:
+   - arrow_refl needs to be declared w/ Hint Resolve to be mentioned in Hint Cut
+   - Hint Resolve does not work modulo conversion
+*)
+
+Lemma arrow_refl : forall {T U : Type}, T = U -> arrow T U.
 Proof.
+  intros * ->.
   lazy beta delta.
   tauto.
 Defined.
 
-Hint Extern 0 (arrow _ _) => refine (arrow_refl _) : related.
+Hint Extern 0 (_ = _) => reflexivity : related.
+
+Hint Resolve arrow_refl : related.
+
+(*Hint Extern 0 (arrow _ _) => refine (arrow_refl _) : related.*)
+(* cannot be in a Hint Cut!! *)
 
 (*Hint Unfold flip : related.*)
 
@@ -25,8 +36,8 @@ Proof.
   apply H2.
 Defined.
 
-Hint Extern 0 (arrow (forall _ : _, _) _) => refine (apply_rule _ _); [ (*match goal with |- ?g => idtac g end;*) shelve |] : related.
-Hint Extern 0 (arrow (forall _ : _, _) _) => refine (apply_rule _ _); [] : related.
+Hint Extern 10 (arrow (forall _ : _, _) _) => refine (apply_rule _ _); [ (*match goal with |- ?g => idtac g end;*) shelve |] : related.
+Hint Extern 10 (arrow (forall _ : _, _) _) => refine (apply_rule _ _); [] : related.
 
 Ltac apply' proof :=
   refine ((_ : arrow _ _) proof);
@@ -49,7 +60,7 @@ Proof.
   unshelve (
       refine (apply_rule _ _); [ match goal with |- ?g => idtac g end; shelve |];
       refine (apply_rule _ _); [ match goal with |- ?g => idtac g end; shelve |];
-      refine (arrow_refl _)
+      refine (arrow_refl _); reflexivity
     );
   [ now_show A | now_show B ].
   Undo.
@@ -84,7 +95,8 @@ Lemma test_add_comm : forall (x y : nat), x + y = y + x.
 Proof.
   (* not the same behavior because not the same unification algorithm *)
   apply nat_ind; lazy beta; swap 1 2; [| intros x IHx ].
-  - apply plus_n_O.
+  - simpl.
+    apply plus_n_O.
   - intro y.
     apply eq_trans; swap 1 2.
     + apply plus_Sn_m.
@@ -104,7 +116,19 @@ Proof.
   tauto.
 Defined.
 
-Hint Resolve arrow_trans | 100000 : related.
+Lemma arrow_trans' :
+  forall (T U V : Type),
+    arrow U V ->
+    arrow T U ->
+    arrow T V.
+Proof.
+  lazy beta delta.
+  tauto.
+Defined.
+
+Hint Resolve arrow_trans arrow_trans' | 100000 : related.
+
+Hint Cut [_* (arrow_trans | arrow_trans') (arrow_trans | arrow_trans' | arrow_refl)] : related.
 
 (*
 Lemma and_proj1 :
@@ -136,8 +160,6 @@ Hint Extern 0 (arrow (_ /\ _) _) => refine (@proj2 _ _) : related.
 (* This transparency hint apparently does not work for patterns *)
 Hint Extern 0 (arrow (_ <-> _) _) => refine (@proj1 _ _) : related.
 Hint Extern 0 (arrow (_ <-> _) _) => refine (@proj2 _ _) : related.
-
-Hint Cut [(_*) arrow_trans arrow_trans] : related.
 
 Lemma test2 : forall (A B : Prop), A -> (A <-> B) -> B.
 Proof.
@@ -195,4 +217,20 @@ Defined.
 Eval lazy beta delta [test5 eq_sym] in test5.
 
 
+(* What about applying a theorem modulo associativity/commutativity *)
 
+Require Import Arith.
+
+Lemma add_comm_view : forall {x y z : nat}, arrow (x + y = z) (y + x = z).
+Proof.
+  intros * <-.
+  refine (Nat.add_comm _ _).
+Defined.
+
+Hint Resolve add_comm_view : related.
+
+Lemma test6 : forall n, n + 0 = n.
+Proof.
+  apply (@eq_refl nat). (* problem with implicit arguments *)
+  (* and there is an infinite loop is the view is not in the hintdb! *)
+Qed.
