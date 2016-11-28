@@ -180,3 +180,54 @@ Defined.
 
 Eval lazy beta delta [test5 eq_sym] in test5.
 
+(* Now we would like to handle SSReflect's style "reflect" *)
+Require Import Bool.
+
+Coercion is_true b := b = true.
+
+Inductive reflect (P : Prop) (b : bool) :=
+| reflect_cons : (P -> b) -> (b -> P) -> reflect P b.
+
+Lemma reflect_to_is_false :
+  forall (P : Prop) (b : bool),
+    reflect P b ->
+    ~ P ->
+    negb b.
+Proof.
+  intros P b Hreflect HnP.
+  inversion Hreflect.
+  destruct b.
+  absurd P; trivial.
+  apply H0; reflexivity.
+  reflexivity.
+Qed.
+
+Lemma reflect_to_is_true :
+  forall (P : Prop) (b : bool),
+    reflect P b ->
+    P -> b.
+Proof.
+  intros * H; inversion H; trivial.
+Qed.
+
+Lemma reflect_from_is_true :
+  forall (P : Prop) (b : bool),
+    reflect P b ->
+    b -> P.
+Proof.
+  intros * H; inversion H; trivial.
+Qed.
+
+Lemma reflect_from_is_false :
+  forall (P : Prop) (b : bool),
+    reflect P b ->
+    negb b ->
+    ~ P.
+Proof.
+  intros P b Hreflect Hnb HP.
+  inversion Hreflect.
+  rewrite H in Hnb; trivial; simpl in Hnb.
+  discriminate.
+Qed.
+
+Hint Resolve reflect_to_is_false reflect_to_is_true : related.
