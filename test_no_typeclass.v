@@ -29,7 +29,7 @@ Proof.
   apply H2.
 Defined.
 
-Hint Extern 10 (arrow (forall _ : _, _) _) => refine (apply_rule _ _); [ (*match goal with |- ?g => idtac g end;*) shelve |] : related.
+Hint Extern 10 (arrow (forall _ : _, _) _) => refine (apply_rule _ _); [ shelve |] : related.
 Hint Extern 10 (arrow (forall _ : _, _) _) => refine (apply_rule _ _); [] : related.
 
 Ltac apply' proof :=
@@ -49,16 +49,8 @@ Tactic Notation "apply" constr(x) := apply' x.
 Lemma test0 : forall (A B C : Prop), (A -> B -> C) -> C.
 Proof.
   intros.
-  refine ((_ : arrow _ _) H);
-  unshelve (
-      refine (apply_rule _ _); [ match goal with |- ?g => idtac g end; shelve |];
-      refine (apply_rule _ _); [ match goal with |- ?g => idtac g end; shelve |];
-      refine (arrow_refl)
-    );
-  [ now_show A | now_show B ].
-  Undo.
   apply H.
-  Fail all:[> now_show A | now_show B ]. (* This should not fail. *)
+  all:[> now_show A | now_show B ].
   (*Grab Existential Variables.*)
   (* In 8.5 *)
 Abort.
@@ -87,13 +79,13 @@ Hint Resolve under_binders : related.
 Lemma test_add_comm : forall (x y : nat), x + y = y + x.
 Proof.
   (* not the same behavior because not the same unification algorithm *)
-  apply nat_ind; lazy beta; swap 1 2; [| intros x IHx ].
+  apply nat_ind; lazy beta; [| intros x IHx ].
   - simpl.
     apply plus_n_O.
   - intro y.
-    apply eq_trans; swap 1 2.
+    apply eq_trans.
     + apply plus_Sn_m.
-    + apply eq_trans; swap 1 2.
+    + apply eq_trans.
       * apply f_equal.
         apply IHx.
       * apply plus_n_Sm.
