@@ -189,10 +189,9 @@ Inductive reflect (P : Prop) (b : bool) :=
 | reflect_cons : (P -> b) -> (b -> P) -> reflect P b.
 
 Lemma reflect_to_is_false :
-  forall (P : Prop) (b : bool),
+  forall {P : Prop} {b : bool},
     reflect P b ->
-    ~ P ->
-    negb b.
+    arrow (~ P) (negb b).
 Proof.
   intros P b Hreflect HnP.
   inversion Hreflect.
@@ -203,26 +202,25 @@ Proof.
 Qed.
 
 Lemma reflect_to_is_true :
-  forall (P : Prop) (b : bool),
+  forall {P : Prop} {b : bool},
     reflect P b ->
-    P -> b.
+    arrow P b.
 Proof.
   intros * H; inversion H; trivial.
 Qed.
 
 Lemma reflect_from_is_true :
-  forall (P : Prop) (b : bool),
+  forall {P : Prop} {b : bool},
     reflect P b ->
-    b -> P.
+    arrow b P.
 Proof.
   intros * H; inversion H; trivial.
 Qed.
 
 Lemma reflect_from_is_false :
-  forall (P : Prop) (b : bool),
+  forall {P : Prop} {b : bool},
     reflect P b ->
-    negb b ->
-    ~ P.
+    arrow (negb b) (~ P).
 Proof.
   intros P b Hreflect Hnb HP.
   inversion Hreflect.
@@ -230,4 +228,29 @@ Proof.
   discriminate.
 Qed.
 
-Hint Resolve reflect_to_is_false reflect_to_is_true : related.
+Hint Resolve reflect_from_is_false reflect_from_is_true reflect_to_is_false reflect_to_is_true : related.
+
+Lemma andb_view : forall (b1 b2 : bool), reflect (b1 /\ b2) (b1 && b2).
+Proof.
+  split.
+  - now intros [-> ->].
+  - now destruct b1, b2.
+Qed.
+
+Lemma orb_view : forall (b1 b2 : bool), reflect (b1 \/ b2) (b1 || b2).
+Proof.
+  split.
+  - intros [-> | ->].
+    + refine (orb_true_l _).
+    + refine (orb_true_r _).
+  - intros; destruct b1, b2; simpl in *; auto.
+Qed.
+
+Hint Resolve andb_view orb_view : related.
+
+Lemma test6 : true || false.
+  apply or_intror; now_show false.
+  Undo.
+  apply or_introl; now_show true.
+  easy.
+Qed.
