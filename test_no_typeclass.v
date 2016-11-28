@@ -7,23 +7,16 @@ Require Export Coq.Program.Basics Coq.Classes.CMorphisms.
    - Hint Resolve does not work modulo conversion
 *)
 
-Lemma arrow_refl : forall {T U : Type}, T = U -> arrow T U.
+Lemma arrow_refl : forall {T : Type}, arrow T T.
 Proof.
-  intros * ->.
   lazy beta delta.
   tauto.
 Defined.
 
-Hint Extern 0 (_ = _) => reflexivity : related.
-
-Hint Resolve arrow_refl : related.
-
-(*Hint Extern 0 (arrow _ _) => refine (arrow_refl _) : related.*)
+Hint Extern 0 (arrow _ _) => refine arrow_refl : related.
 (* cannot be in a Hint Cut!! *)
 
 (*Hint Unfold flip : related.*)
-
-(*Definition apply_to {T : Type} (U : T -> Type) (t : T) := U t.*)
 
 Lemma apply_rule :
   forall {T V : Type} {U : T -> Type},
@@ -60,7 +53,7 @@ Proof.
   unshelve (
       refine (apply_rule _ _); [ match goal with |- ?g => idtac g end; shelve |];
       refine (apply_rule _ _); [ match goal with |- ?g => idtac g end; shelve |];
-      refine (arrow_refl _); reflexivity
+      refine (arrow_refl)
     );
   [ now_show A | now_show B ].
   Undo.
@@ -116,19 +109,9 @@ Proof.
   tauto.
 Defined.
 
-Lemma arrow_trans' :
-  forall {T U V : Type},
-    arrow U V ->
-    arrow T U ->
-    arrow T V.
-Proof.
-  lazy beta delta.
-  tauto.
-Defined.
+Hint Resolve arrow_trans | 100000 : related.
 
-Hint Resolve arrow_trans arrow_trans' | 100000 : related.
-
-Hint Cut [_* (arrow_trans | arrow_trans') (arrow_trans | arrow_trans' | arrow_refl)] : related.
+Hint Cut [(_*) (arrow_trans) (arrow_trans)] : related.
 
 (*
 Lemma and_proj1 :
@@ -188,25 +171,6 @@ Defined.
 
 Eval compute in test4.
 
-(*Hint Unfold arrow : related.*)
-(* To allow views to be given without arrow, such as eq_sym.
-   But might create a larger search space. *)
-
-(* To avoid this problem we rather define the following hint
-   and the associated cut. *)
-(*
-Lemma unfold_arrow : forall (T U : Type), (T -> U) -> arrow T U.
-Proof.
-  tauto.
-Defined.
-
-Hint Resolve unfold_arrow : related.
-
-Hint Cut [_* unfold_arrow _ _] : related.
-*)
-(* This acutally does not help because the cut does not prevent many intros. *)
-
-(* The following solution is better but implies a ugly Hint Extern *)
 Hint Extern 0 (arrow (_ = _) (_ = _)) => refine (@eq_sym _ _ _) : related.
 
 Lemma test5 : 0 = 1 -> 1 = 0.
@@ -216,29 +180,3 @@ Defined.
 
 Eval lazy beta delta [test5 eq_sym] in test5.
 
-
-(* What about applying a theorem modulo associativity/commutativity *)
-
-Require Import Arith.
-
-Hint Extern 20 => rewrite Nat.add_comm : related.
-
-Lemma test6 : forall n, n + 0 = n.
-Proof.
-  apply (@eq_refl nat). (* problem with implicit arguments *)
-  (* and there is an infinite loop is the view is not in the hintdb! *)
-Defined.
-
-Eval lazy beta zeta delta [test6 arrow arrow_refl under_binders] in test6.
-
-Lemma test7 : forall (n m : nat) (P : nat -> Prop), P (n + m) -> P (m + n).
-Proof.
-  intros * H.
-  apply H.
-Defined.
-
-Lemma test8 : forall n m, n + m = 0.
-Proof.
-  intros.
-  apply I. (* this infinite loop is probably due to the rewrite *)
-(* something else needs to be found in the lines of the AAC plugin *)
