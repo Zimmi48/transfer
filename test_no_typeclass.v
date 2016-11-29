@@ -171,7 +171,14 @@ Lemma test5 : 0 = 1 -> 1 = 0.
   apply H.
 Defined.
 
-Eval lazy beta delta [test5 eq_sym] in test5.
+Eval lazy beta delta [test5] in test5.
+
+Lemma test5' : (forall (x y : nat), x = y) -> (forall (x y : nat), y = x).
+  intro.
+  apply H.
+Defined.
+
+Eval lazy beta delta [test5' under_binders] in test5'.
 
 (* Now we would like to handle SSReflect's style "reflect" *)
 Require Import Bool.
@@ -235,3 +242,13 @@ Lemma test6 : true || false.
   apply or_introl; now_show true.
   easy.
 Qed.
+
+Lemma test7 : (forall (y : bool) (x : nat), x = 0 -> y) -> forall (y : bool), 1 = 0 -> y.
+Proof.
+  intro H.
+  apply H.
+Defined.
+
+Eval compute in test7.
+(* A second place where under_binders is useful. *)
+
