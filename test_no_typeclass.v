@@ -103,7 +103,12 @@ Defined.
 
 Hint Resolve arrow_trans | 100000 : related.
 
-Hint Cut [(_*) (arrow_trans) (arrow_trans)] : related.
+Hint Cut [ _ (_*) arrow_trans] : related.
+(* Only allow arrow_trans at the very beginning of the proof search.
+   This significantly improves the search time by cutting big parts
+   of the search space.
+   It basically means: first try some guided transfer, then try some
+   unguided transfer. *)
 
 (*
 Lemma and_proj1 :
