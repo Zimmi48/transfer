@@ -7,7 +7,9 @@ Require Export Coq.Program.Basics Coq.Classes.CMorphisms.
    - Hint Resolve does not work modulo conversion
 *)
 
-Lemma arrow_refl : forall {T : Type}, arrow T T.
+Generalizable All Variables.
+
+Lemma arrow_refl : `{ arrow T T }.
 Proof.
   lazy beta delta.
   tauto.
@@ -18,9 +20,7 @@ Hint Extern 0 (arrow _ _) => refine arrow_refl : related.
 
 (*Hint Unfold flip : related.*)
 
-Lemma apply_rule :
-  forall {T V : Type} {U : T -> Type},
-  forall (t : T), arrow (U t) V -> arrow (forall x : T, U x) V.
+Lemma apply_rule : `{ forall (t : T), arrow (U t) V -> arrow (forall x : T, U x) V }.
 Proof.
   intros *.
   lazy beta delta.
@@ -64,9 +64,9 @@ Defined.
 
 Eval compute in test1.
 
-Lemma under_binders : forall (A : Type) (f g : A -> Type),
-    (forall x : A, arrow (f x) (g x)) ->
-    arrow (forall x : A, f x) (forall x : A, g x).
+Lemma under_binders :
+    `{ (forall x : A, arrow (f x) (g x)) ->
+       arrow (forall x : A, f x) (forall x : A, g x) }.
 Proof.
   lazy beta delta.
   intros * H1 H2 *.
@@ -91,11 +91,7 @@ Proof.
       * apply plus_n_Sm.
 Qed.
 
-Lemma arrow_trans :
-  forall {T U V : Type},
-    arrow T U ->
-    arrow U V ->
-    arrow T V.
+Lemma arrow_trans : `{ arrow T U -> arrow U V -> arrow T V }.
 Proof.
   lazy beta delta.
   tauto.
@@ -185,10 +181,7 @@ Coercion is_true b := b = true.
 Inductive reflect (P : Prop) (b : bool) :=
 | reflect_cons : (P -> b) -> (b -> P) -> reflect P b.
 
-Lemma reflect_to_is_false :
-  forall {P : Prop} {b : bool},
-    reflect P b ->
-    arrow (~ P) (negb b).
+Lemma reflect_to_is_false : `{ reflect P b -> arrow (~ P) (negb b) }.
 Proof.
   intros P b Hreflect HnP.
   inversion Hreflect.
@@ -198,26 +191,17 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma reflect_to_is_true :
-  forall {P : Prop} {b : bool},
-    reflect P b ->
-    arrow P b.
+Lemma reflect_to_is_true : `{ reflect P b -> arrow P b }.
 Proof.
   intros * H; inversion H; trivial.
 Qed.
 
-Lemma reflect_from_is_true :
-  forall {P : Prop} {b : bool},
-    reflect P b ->
-    arrow b P.
+Lemma reflect_from_is_true : `{ reflect P b -> arrow b P }.
 Proof.
   intros * H; inversion H; trivial.
 Qed.
 
-Lemma reflect_from_is_false :
-  forall {P : Prop} {b : bool},
-    reflect P b ->
-    arrow (negb b) (~ P).
+Lemma reflect_from_is_false : `{ reflect P b -> arrow (negb b) (~ P) }.
 Proof.
   intros P b Hreflect Hnb HP.
   inversion Hreflect.
