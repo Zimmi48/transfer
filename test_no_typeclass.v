@@ -2,11 +2,6 @@ Require Export Coq.Program.Basics Coq.Classes.CMorphisms.
 
 (*Set Universe Polymorphism.*)
 
-(* This complex arrow_refl hint serves the following purpose:
-   - arrow_refl needs to be declared w/ Hint Resolve to be mentioned in Hint Cut
-   - Hint Resolve does not work modulo conversion
-*)
-
 Generalizable All Variables.
 
 Lemma arrow_refl : `{ arrow T T }.
