@@ -85,7 +85,7 @@ Proof.
         apply IHx.
       * apply plus_n_Sm.
 Qed.
-
+(*
 Lemma arrow_trans : `{ arrow T U -> arrow U V -> arrow T V }.
 Proof.
   lazy beta delta.
@@ -94,16 +94,16 @@ Defined.
 
 Hint Resolve arrow_trans | 100000 : related.
 
-Hint Cut [ _ (_*) arrow_trans] : related.
+Hint Cut [ _ (_* ) arrow_trans] : related.
+*)
 (* Only allow arrow_trans at the very beginning of the proof search.
    This significantly improves the search time by cutting big parts
    of the search space.
    It basically means: first try some guided transfer, then try some
    unguided transfer. *)
 
-(*
 Lemma and_proj1 :
-  forall (P P' Q : Prop),
+  forall {P P' Q : Prop},
     arrow P P' ->
     arrow (P /\ Q) P'.
 Proof.
@@ -112,7 +112,7 @@ Proof.
 Defined.
 
 Lemma and_proj2 :
-  forall (P Q Q' : Prop),
+  forall {P Q Q' : Prop},
     arrow Q Q' ->
     arrow (P /\ Q) Q'.
 Proof.
@@ -120,9 +120,13 @@ Proof.
   tauto.
 Defined.
 
-Hint Resolve and_proj1 and_proj2 : related.
-*)
+Hint Extern 0 (arrow (_ /\ _) _) => refine (and_proj1 _) : related.
+Hint Extern 0 (arrow (_ /\ _) _) => refine (and_proj2 _) : related.
 
+Hint Extern 0 (arrow (_ <-> _) _) => refine (and_proj1 _) : related.
+Hint Extern 0 (arrow (_ <-> _) _) => refine (and_proj2 _) : related.
+
+(*
 (* proj1 cannot be used as a hint with Hint Resolve *)
 Hint Extern 0 (arrow (_ /\ _) _) => refine (@proj1 _ _) : related.
 Hint Extern 0 (arrow (_ /\ _) _) => refine (@proj2 _ _) : related.
@@ -131,7 +135,7 @@ Hint Extern 0 (arrow (_ /\ _) _) => refine (@proj2 _ _) : related.
 (* This transparency hint apparently does not work for patterns *)
 Hint Extern 0 (arrow (_ <-> _) _) => refine (@proj1 _ _) : related.
 Hint Extern 0 (arrow (_ <-> _) _) => refine (@proj2 _ _) : related.
-
+*)
 Lemma test2 : forall (A B : Prop), A -> (A <-> B) -> B.
 Proof.
   intros.
