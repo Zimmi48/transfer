@@ -64,6 +64,7 @@ Proof.
   refine H.
 Defined.
 
+(*
 (** When the terms are not symmetric *)
 
 Lemma forall_rule' :
@@ -90,20 +91,70 @@ Proof.
   refine (H2 _).
 Defined.
 
+Hint Resolve find_witness : related.
+*)
+
+Lemma apply_rule :
+  `{ forall (t : T),
+       Related arrow (U t) V ->
+       Related arrow (forall x : T, U x) V }.
+Proof.
+  intros *.
+  lazy beta delta.
+  intros H1 H2.
+  apply H1.
+  apply H2.
+Defined.
+
+Hint Extern 10 (Related arrow (forall _ : _, _) _) => refine (apply_rule _ _); [ shelve |] : related.
+Hint Extern 10 (Related arrow (forall _ : _, _) _) => refine (apply_rule _ _); [] : related.
+
 (** Generic transfer rules, i.e. hints with no premises (borrowing the terminology from Isabelle) *)
 
-Lemma eq_rule : `{ (eq ==> eq ==> arrow) (@eq A) (@eq A) }.
+Lemma eq_rule : `{ Related (eq ==> eq ==> arrow) (@eq A) (@eq A) }.
 Proof.
-  intros ? ? ? H.
+  intros ? ? ? eq1 ? ? eq2 eq3.
+  refine (eq_trans _ _).
+  - symmetry; refine eq1.
+  - refine (eq_trans eq3 eq2).
+Defined.
+
+Lemma eq_refl' : `{ forall x : A, Related eq x x }.
+Proof.
+  intros.
+  refine eq_refl.
+Defined.
+
+Hint Resolve eq_rule eq_refl' : related.
+
 (** Some specific transfer rules. *)
+
+Lemma comm_rule : `{ Related (eq ==> eq ==> eq) Nat.add (flip Nat.add) }.
+Proof.
+  intros ? ? -> ? ? ->.
+  Require Import Arith.
+  refine (Nat.add_comm _ _).
+Defined.
+
+Hint Resolve comm_rule : related.
 
 (** Test *)
 
-Goal forall n m, Related arrow (forall x : nat, x = x) (n + m = m + n).
+Lemma test1 : forall n m, Related arrow (forall x : nat, x = x) (n + m = m + n).
 Proof.
   intros.
-  refine (forall_rule' _). (* here simple eapply forall_rule' does not work. *)
-  simple eapply app_rule. (* here refine (app_rule _ _) does not work. *)
-  simple eapply (find_witness _). (* equivalent to: refine (find_witness _); shelve. *)
-  refine (lambda_rule _); intros. (* here simple eapply lambda_rule does not work. *)
-  
+  typeclasses eauto with related.
+(* Equivalent to:
+  refine (apply_rule _ _).
+  simple eapply app_rule.
+  - simple eapply app_rule.
+    + simple eapply eq_rule.
+    + simple eapply eq_refl'.
+  - simple eapply app_rule'.
+    + simple eapply app_rule.
+      * simple eapply comm_rule.
+      * simple eapply eq_refl'.
+    + simple eapply eq_refl'.
+*)
+Defined.
+
