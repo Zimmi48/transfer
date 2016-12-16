@@ -34,7 +34,7 @@ Proof.
   refine (Hfun _ _ Harg).
 Defined.
 
-Hint Resolve lambda_rule app_rule : related.
+Hint Resolve lambda_rule app_rule | 0 : related.
 
 (*Hint Extern 0 => unshelve simple eapply (app_rule _ _); shelve_unifiable : related.*)
 (* Why is this unshelve necessary? *)
@@ -51,7 +51,7 @@ Proof.
   refine (Hfun _ _ Harg).
 Defined.
 
-Hint Resolve app_rule' : related.
+Hint Resolve app_rule' | 1 : related.
 
 (** Inference rules to change a forall or an implication for a function application *)
 
@@ -63,36 +63,6 @@ Proof.
   intros * H.
   refine H.
 Defined.
-
-(*
-(** When the terms are not symmetric *)
-
-Lemma forall_rule' :
-  `{ forall {P : X -> Type} {P' : Type},
-       Related arrow (forall_def (fun x => P x)) (forall_def (fun _ : unit => P')) ->
-       Related arrow (forall x, P x) P' }.
-Proof.
-  intros * H1 H2.
-  refine (H1 H2 tt).
-Defined.
-
-Hint Resolve forall_rule forall_rule' : related.
-
-(** The total relation between type X and unit (non-empty iff X is non-empty) *)
-
-Definition Witness `(x : X) (_ : unit) := True.
-
-(** The only heterogeneous rule for apply without transfer *)
-
-Lemma find_witness : `{ X -> Related ((Witness ==> arrow) ==> arrow) (@forall_def X) (@forall_def unit) }.
-Proof.
-  intros ? x f f' H1 H2 ?.
-  refine (H1 x _ I _).
-  refine (H2 _).
-Defined.
-
-Hint Resolve find_witness : related.
-*)
 
 Lemma apply_rule :
   `{ forall (t : T),
@@ -109,6 +79,11 @@ Defined.
 Hint Extern 10 (Related arrow (forall _ : _, _) _) => refine (apply_rule _ _); [ shelve |] : related.
 Hint Extern 10 (Related arrow (forall _ : _, _) _) => refine (apply_rule _ _); [] : related.
 
+Tactic Notation "apply" constr(x) "modulo" ident(hintdb) :=
+  refine ((_ : Related arrow _ _) x);
+  unshelve typeclasses eauto with nocore related hintdb;
+  shelve_unifiable.
+
 (** Generic transfer rules, i.e. hints with no premises (borrowing the terminology from Isabelle) *)
 
 Lemma eq_rule : `{ Related (eq ==> eq ==> arrow) (@eq A) (@eq A) }.
@@ -119,13 +94,19 @@ Proof.
   - refine (eq_trans eq3 eq2).
 Defined.
 
+Hint Resolve eq_rule : related.
+
+(*
 Lemma eq_refl' : `{ forall x : A, Related eq x x }.
 Proof.
   intros.
   refine eq_refl.
 Defined.
 
-Hint Resolve eq_rule eq_refl' : related.
+Hint Resolve eq_refl' : related.
+*)
+
+Hint Extern 0 (Related eq _ _) => reflexivity : related.
 
 (** Some specific transfer rules. *)
 
@@ -136,14 +117,13 @@ Proof.
   refine (Nat.add_comm _ _).
 Defined.
 
-Hint Resolve comm_rule : related.
+Hint Resolve comm_rule : arithViews.
 
 (** Test *)
 
-Lemma test1 : forall n m, Related arrow (forall x : nat, x = x) (n + m = m + n).
+Lemma test1 n m : Related arrow (forall x : nat, x = x) (n + m = m + n).
 Proof.
-  intros.
-  typeclasses eauto with related.
+  typeclasses eauto with related arithViews.
 (* Equivalent to:
   refine (apply_rule _ _).
   simple eapply app_rule.
@@ -157,4 +137,38 @@ Proof.
     + simple eapply eq_refl'.
 *)
 Defined.
+
+Lemma test1' n m : n + m = m + n.
+Proof.
+  apply @eq_refl modulo arithViews.
+Defined.
+
+Lemma test2 n : Related arrow (forall x : nat, x = x) (n + 0 = n).
+Proof.
+  typeclasses eauto with related arithViews.
+Defined.
+
+Lemma test2' n : n + 0 = n.
+Proof.
+  apply @eq_refl modulo arithViews.
+Defined.
+
+Lemma test3 n : Related arrow (forall x : nat, x = x) (n = n + 0).
+Proof.
+  Fail typeclasses eauto with related.
+Abort.
+
+Lemma test4 n : Related arrow (forall x : nat, x = x) (n + 1 = 0).
+Proof.
+refine (apply_rule _ _).
+refine (app_rule' _ _).
+simple eapply @app_rule'.
+simple eapply @app_rule'.
+simple eapply @app_rule'.
+simple eapply @app_rule'.
+simple eapply @app_rule'.
+simple eapply @app_rule'.
+simple eapply @app_rule'.
+simple eapply @app_rule'.
+
 
