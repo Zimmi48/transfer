@@ -4,7 +4,7 @@
  * http://mozilla.org/MPL/2.0/.
  *)
 
-Require Import Transfer.CRespectful.
+Require Import StandardInstances.
 
 Local Notation " A <-> B " := (iffT A B) : type_scope.
 

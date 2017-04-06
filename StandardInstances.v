@@ -4,43 +4,48 @@
  * http://mozilla.org/MPL/2.0/.
  *)
 
-Require Export Transfer.CRespectful.
+From Coq Require Export Program.Basics CMorphisms.
+
+Global Set Universe Polymorphism.
+
+Definition respectful_arrow
+  {A B C D: Type}
+  (R : A -> B -> Type) (R' : C -> D -> Type)
+  (f : A -> C) (f' : B -> D) : Type :=
+  forall e e', R e e' -> R' (f e) (f' e').
+
+Notation " R ##> R' " := (respectful_arrow R R')
+                           (right associativity, at level 55) : type_scope.
 
 Lemma arrow_arrow : (iffT ##> iffT ##> iffT) arrow arrow.
-Proof.
-(*  firstorder. *)
-  intros A B [f f'] C D [g g'].
-  split; intros H1 H2.
-  exact (g (H1 (f' H2))).
-  exact (g' (H1 (f H2))).
-Qed.
+Proof. firstorder. Qed.
 
 Lemma impl_impl : (iff ##> iff ##> iff) impl impl.
-Proof ltac:(firstorder).
+Proof. firstorder. Qed.
 
 Lemma impl_impl' : (iff ##> iff ##> iffT) impl impl.
-Proof ltac:(firstorder).
+Proof. firstorder. Qed.
 
 Lemma iff_iff : (iff ##> iff ##> iff) iff iff.
-Proof ltac:(firstorder).
+Proof. firstorder. Qed.
 
 Lemma iff_iff' : (iff ##> iff ##> iffT) iff iff.
-Proof ltac:(firstorder).
+Proof. firstorder. Qed.
 
 Lemma prod_prod : (iffT ##> iffT ##> iffT) prod prod.
-Proof ltac:(firstorder).
+Proof. firstorder. Qed.
 
 Lemma and_and : (iff ##> iff ##> iff) and and.
-Proof ltac:(firstorder).
+Proof. firstorder. Qed.
 
 Lemma and_and' : (iff ##> iff ##> iffT) and and.
-Proof ltac:(firstorder).
+Proof. firstorder. Qed.
 
 Lemma or_or : (iff ##> iff ##> iff) or or.
-Proof ltac:(firstorder).
+Proof. firstorder. Qed.
 
 Lemma or_or' : (iff ##> iff ##> iffT) or or.
-Proof ltac:(firstorder).
+Proof. firstorder. Qed.
 
 Lemma eq_eq (A : Type) : (eq ##> eq ##> iff) (@eq A) (@eq A).
 Proof.

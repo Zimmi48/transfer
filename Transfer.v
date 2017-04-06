@@ -5,8 +5,8 @@
  * http://mozilla.org/MPL/2.0/.
  *)
 
-Require Export Transfer.StandardInstances.
-Require Transfer.Respectful.
+Require Export StandardInstances.
+Require CRespectful Respectful.
 
 Typeclasses Opaque forall_def arrow.
 (** universe-polymorphic forall_def and arrow are not declared as opaque in the library *)
@@ -226,8 +226,8 @@ Instance bitotal_from_bitotal
 Proof.
   unfold Related in *.
   apply Respectful.bitotal_decl.
-  now apply bitotal_decl_recip1.
-  now apply bitotal_decl_recip2.
+  now apply CRespectful.bitotal_decl_recip1.
+  now apply CRespectful.bitotal_decl_recip2.
 Qed.
 
 Instance bitotal_predicate_rule
@@ -247,5 +247,5 @@ Instance bitotal_predicate_rule'
   Related (((R ##> iffT) ##> iffT) ##> iffT) forall_def forall_def.
 Proof.
   unfold Related in *.
-  now apply total_predicate.
+  now apply CRespectful.total_predicate.
 Qed.

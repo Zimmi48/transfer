@@ -4,19 +4,8 @@
  * http://mozilla.org/MPL/2.0/.
  *)
 
-Require Export Coq.Program.Basics Coq.Classes.CMorphisms.
+Require Import StandardInstances.
 Require Coq.Setoids.Setoid.
-
-Global Set Universe Polymorphism.
-
-Definition respectful_arrow
-  {A B C D: Type}
-  (R : A -> B -> Type) (R' : C -> D -> Type)
-  (f : A -> C) (f' : B -> D) : Type :=
-  forall e e', R e e' -> R' (f e) (f' e').
-
-Notation " R ##> R' " := (respectful_arrow R R')
-                           (right associativity, at level 55) : type_scope.
 
 Local Notation " A <-> B " := (iffT A B) : type_scope.
 

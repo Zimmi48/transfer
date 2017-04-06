@@ -3,9 +3,8 @@
     Isabelle file.
 *)
 
-Require Import MSets.
-Require Import Transfer.
-Require Import Omega.
+From Coq Require Import MSets Omega.
+Require Import Transfer CRespectful.
 
 (** Because MSets are generic, we give generic transfer declarations.
     Because some transfer properties require it, we will ask that
