@@ -1,8 +1,10 @@
--R . Transfer
-CRespectful.v
-Respectful.v
-StandardInstances.v
-Transfer.v
-NArithTransfer.v
-NArithTests.v
-SetNatTransfer.v
+-R src/ Transfer
+
+src/CRespectful.v
+src/Respectful.v
+src/StandardInstances.v
+src/Transfer.v
+src/NArithTransfer.v
+src/SetNatTransfer.v
+
+tests/NArithTests.v
