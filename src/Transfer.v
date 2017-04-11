@@ -9,6 +9,8 @@ From Coq Require Import Program.Basics CMorphisms.
 
 (*Set Universe Polymorphism.*)
 
+Arguments all {A}.
+
 Class Related {A B : Type} (R : A -> B -> Type) (t : A) (t' : B) :=
   is_related : R t t'.
 

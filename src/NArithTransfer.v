@@ -28,7 +28,7 @@ Ltac related_basics :=
   unfold flip.
 
 Instance natN_bitotal :
-  Related ((natN ##> iff) ##> iff) (@all _) (@all _).
+  Related ((natN ##> iff) ##> iff) all all.
 Proof.
   related_basics.
   unfold natN.

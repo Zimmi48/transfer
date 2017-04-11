@@ -20,13 +20,13 @@ Section Definitions.
   (** * Totality declarations *)
 
   (** Surjectivity, i.e. right-totality *)
-  Definition righttotal := ((R ##> impl) ##> impl) (@all A) (@all B).
+  Definition righttotal := ((R ##> impl) ##> impl) all all.
 
   (** Left-totality *)
-  Definition lefttotal := ((R ##> flip impl) ##> flip impl) (@all A) (@all B).
+  Definition lefttotal := ((R ##> flip impl) ##> flip impl) all all.
 
   (** Both right and left-totality *)
-  Definition bitotal := ((R ##> iff) ##> iff) (@all A) (@all B).
+  Definition bitotal := ((R ##> iff) ##> iff) all all.
 
   (** * Uniqueness declarations *)
 
@@ -134,7 +134,7 @@ Section Declarations1.
   Qed.
 
   Lemma generic_right_covered_decl :
-    ((R ##> impl) ##> impl) (@all A) (fun P' => forall y, { x : A & R x y } -> P' y).
+    ((R ##> impl) ##> impl) all (fun P' => forall y, { x : A & R x y } -> P' y).
   Proof.
     lazy beta delta.
     intros P P' Prel HP x' (x & xrel).
@@ -163,7 +163,7 @@ Section Declarations2.
   Qed.
 
   Lemma generic_left_covered_decl :
-    ((R ##> flip impl) ##> flip impl) (fun P => forall x, { y : B & R x y } -> P x) (@all B).
+    ((R ##> flip impl) ##> flip impl) (fun P => forall x, { y : B & R x y } -> P x) all.
   Proof.
     pose (H := @generic_right_covered_decl B A (flip R)).
     lazy beta delta.
@@ -284,7 +284,7 @@ Instance bitotal_predicate_rule
   (A B : Type)
   (R : A -> B -> Type)
   (inst : Related (R ##> R ##> iff) eq eq) :
-  Related (((R ##> iff) ##> iff) ##> iff) (@all (A -> Prop)) (@all (B -> Prop)).
+  Related (((R ##> iff) ##> iff) ##> iff) all all.
 Proof.
   unfold Related in *.
   now apply total_predicate.
