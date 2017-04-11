@@ -7,62 +7,54 @@
 From Transfer Require Import Transfer.
 From Coq Require Import Program.Basics CMorphisms.
 
+Generalizable All Variables.
+
 Set Warnings "-notation-overridden".
 Local Notation " A <-> B " := (iffT A B) : type_scope.
 Set Warnings "default".
 
-Section Definitions.
+(** * Totality declarations *)
 
-  Set Implicit Arguments.
-  Variables A B : Type.
-  Variable R : A -> B -> Type.
+(** Surjectivity, i.e. right-totality *)
+Definition righttotal `(R : A -> B -> Type) := ((R ##> impl) ##> impl) all all.
 
-  (** * Totality declarations *)
+(** Left-totality *)
+Definition lefttotal `(R : A -> B -> Type) := ((R ##> flip impl) ##> flip impl) all all.
 
-  (** Surjectivity, i.e. right-totality *)
-  Definition righttotal := ((R ##> impl) ##> impl) all all.
+(** Both right and left-totality *)
+Definition bitotal `(R : A -> B -> Type) := ((R ##> iff) ##> iff) all all.
 
-  (** Left-totality *)
-  Definition lefttotal := ((R ##> flip impl) ##> flip impl) all all.
+(** * Uniqueness declarations *)
 
-  (** Both right and left-totality *)
-  Definition bitotal := ((R ##> iff) ##> iff) all all.
+(** Functionality, i.e. right-uniqueness *)
+Definition rightunique `(R : A -> B -> Type) := (R ##> R ##> impl) eq eq.
 
-  (** * Uniqueness declarations *)
+(** Injectivity, i.e. left-uniqueness *)
+Definition leftunique `(R : A -> B -> Type) := (R ##> R ##> flip impl) eq eq.
 
-  (** Functionality, i.e. right-uniqueness *)
-  Definition rightunique := (R ##> R ##> impl) eq eq.
+(** Both right and left-unique *)
+Definition biunique `(R : A -> B -> Type) := (R ##> R ##> iff) eq eq.
 
-  (** Injectivity, i.e. left-uniqueness *)
-  Definition leftunique := (R ##> R ##> flip impl) eq eq.
+(** Definition of "bounded forall" *)
+Definition ball `(subType : A -> Type) (predicate : A -> Prop) :=
+  forall x, subType x -> predicate x.
 
-  (** Both right and left-unique *)
-  Definition biunique := (R ##> R ##> iff) eq eq.
+(* Ltac to solve automatically some goals which just need reordering of hypotheses *)
 
-  (** Definition of "bounded forall" *)
-  Definition ball (subType : A -> Type) (predicate : A -> Prop) :=
-    forall x, subType x -> predicate x.
-
-End Definitions.
-
-(** ** Ltac to solve automatically some goals which just need reordering of hypotheses *)
-
-Ltac apply_hyp :=
+Local Ltac apply_hyp :=
   match goal with
     [ H : _ |- _ ] => apply H
   end.
 
-Ltac intro_and_apply :=
+Local Ltac intro_and_apply :=
   apply_hyp + (intros ? * ; intro_and_apply).
 
-Ltac flipdecl := 
+Local Ltac flipdecl := 
   lazy beta delta;
   repeat (
       repeat split;
       repeat intro_and_apply
     ).
-
-Generalizable All Variables.
 
 (** * Totality declarations *)
 
@@ -134,10 +126,8 @@ Qed.
 Theorem biunique_decl_recip1 `(R : A -> B -> Type) :
   biunique R -> forall x x' y', R x x' -> R x y' -> x' = y'.
 Proof.
-  intro biunique.
-  apply rightunique_decl.
-  apply rightunique_from_biunique.
-  assumption.
+  intro.
+  now apply rightunique_decl, rightunique_from_biunique.
 Qed.
 
 Lemma generic_right_covered_decl `(R : A -> B -> Type) :
@@ -231,7 +221,7 @@ Theorem biunique_decl_recip2 `(R : A -> B -> Type) :
 Proof.
   intros biunique *.
   apply flipbiunique in biunique.
-  now apply (biunique_decl_recip1 biunique).
+  now apply biunique_decl_recip1 with (1 := biunique).
 Qed.
 
 (** ** Properties derived from their right and left-equivalent *)
