@@ -66,7 +66,7 @@ Section Declarations1.
 
   Variables A B : Type.
   Variable R : A -> B -> Type.
-  
+
   (** * Totality declarations *)
 
   (** ** Straightforward properties *)
