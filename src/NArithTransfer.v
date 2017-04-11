@@ -5,8 +5,8 @@
  * http://mozilla.org/MPL/2.0/.
  *)
 
-Require Export Transfer.Transfer Coq.NArith.BinNatDef.
-Require Import Coq.NArith.Nnat.
+From Transfer Require Import Transfer.
+From Coq Require Import BinNatDef Nnat Program.Basics.
 
 Definition natN x x' := N.of_nat x = x'.
 
@@ -18,15 +18,24 @@ Proof. apply N2Nat.id. Qed.
 
 (* Totality of natN *)
 
+Ltac related_basics :=
+  intros;
+  unfold Related;
+  unfold respectful_arrow;
+(*  unfold arrow; *)
+  unfold impl;
+(*  unfold forall_def; *)
+  unfold flip.
+
 Instance natN_bitotal :
-  Related ((natN ##> iffT) ##> iffT) forall_def forall_def.
+  Related ((natN ##> iff) ##> iff) (@all _) (@all _).
 Proof.
   related_basics.
   unfold natN.
   intros f1 f2 Hf; split; intros H x.
   + apply (Hf (N.to_nat x)); trivial.
     apply N2Nat.id.
-  + apply Hf with (e' := N.of_nat x); trivial.
+  + apply (Hf _ (N.of_nat x)); trivial.
 Qed.
 
 Module N2Nat_transfer.
@@ -72,7 +81,7 @@ Ltac solve thm :=
 
 (* Rewrite all theorems from N2Nat *)
 
-Instance inj : Related (natN ##> natN ##> arrow) eq eq.
+Instance inj : Related (natN ##> natN ##> impl) eq eq.
 Proof.
   solve inj.
 Qed.
@@ -81,7 +90,7 @@ Instance inj_iff : Related (natN ##> natN ##> iff) eq eq.
 Proof.
   solve inj_iff.
 Qed.
-
+(*
 Instance inj_iffT : Related (natN ##> natN ##> iffT) eq eq.
 Proof.
   intros ? ? reln ? ? relm.
@@ -94,7 +103,7 @@ Proof.
     intros -> .
     now apply Nat2N.inj.
 Qed.
-
+*)
 (* inj_double, inj_succ_double *)
 
 Instance inj_succ : Related (natN ##> natN) S N.succ.
