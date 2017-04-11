@@ -269,23 +269,19 @@ Section Declarations3.
 
   Theorem total_predicate : biunique R -> bitotal (R ##> iff).
   Proof.
-    intro biunique.
-    apply bitotal_from_right_and_left_total;
-      [ apply righttotal_predicate;
-        apply rightunique_from_biunique
-      | apply lefttotal_predicate;
-        apply leftunique_from_biunique ];
-      exact biunique.
+    intros.
+    apply bitotal_from_right_and_left_total.
+    - now apply righttotal_predicate, rightunique_from_biunique.
+    - now apply lefttotal_predicate, leftunique_from_biunique.
   Qed.
 
 End Declarations3.
 
 Instance bitotal_predicate_rule
   (A B : Type)
-  (R : A -> B -> Type)
-  (inst : Related (R ##> R ##> iff) eq eq) :
+  (R : A -> B -> Type) :
+  Related (R ##> R ##> iff) eq eq ->
   Related (((R ##> iff) ##> iff) ##> iff) all all.
 Proof.
-  unfold Related in *.
   now apply total_predicate.
 Qed.
