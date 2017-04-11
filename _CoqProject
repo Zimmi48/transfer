@@ -1,4 +1,4 @@
--R src/ Transfer
+\-R src/ Transfer
 
 src/CRespectful.v
 src/Respectful.v
@@ -6,5 +6,7 @@ src/StandardInstances.v
 src/Transfer.v
 src/NArithTransfer.v
 src/SetNatTransfer.v
+src/ssrint_Z.v
 
 tests/NArithTests.v
+tests/ssrint_Z.v

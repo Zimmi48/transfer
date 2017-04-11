@@ -107,7 +107,9 @@ VFILES:=src/CRespectful.v\
   src/Transfer.v\
   src/NArithTransfer.v\
   src/SetNatTransfer.v\
-  tests/NArithTests.v
+  src/ssrint_Z.v\
+  tests/NArithTests.v\
+  tests/ssrint_Z.v
 
 ifneq ($(filter-out archclean clean cleanall printenv,$(MAKECMDGOALS)),)
 -include $(addsuffix .d,$(VFILES))
@@ -142,7 +144,8 @@ endif
 #                                     #
 #######################################
 
-all: $(VOFILES) 
+all: $(VOFILES) ./-w\
+  ./-notation-overridden
 
 quick: $(VOFILES:.vo=.vio)
 
@@ -180,7 +183,19 @@ beautify: $(VFILES:=.beautified)
 	@echo 'Do not do "make clean" until you are sure that everything went well!'
 	@echo 'If there were a problem, execute "for file in $$(find . -name \*.v.old -print); do mv $${file} $${file%.old}; done" in your shell/'
 
-.PHONY: all archclean beautify byte clean cleanall gallina gallinahtml html install install-doc install-natdynlink install-toploop opt printenv quick uninstall userinstall validate vio2vo
+.PHONY: all archclean beautify byte clean cleanall gallina gallinahtml html install install-doc install-natdynlink install-toploop opt printenv quick uninstall userinstall validate vio2vo ./-w ./-notation-overridden
+
+###################
+#                 #
+# Subdirectories. #
+#                 #
+###################
+
+./-w:
+	+cd "./-w" && $(MAKE) all
+
+./-notation-overridden:
+	+cd "./-notation-overridden" && $(MAKE) all
 
 ####################
 #                  #
@@ -202,6 +217,8 @@ install:
 	 install -d "`dirname "$(DSTROOT)"$(COQLIBINSTALL)/Transfer/$$i`"; \
 	 install -m 0644 $$i "$(DSTROOT)"$(COQLIBINSTALL)/Transfer/$$i; \
 	done
+	+cd ./-w && $(MAKE) DSTROOT="$(DSTROOT)" INSTALLDEFAULTROOT="$(INSTALLDEFAULTROOT)/./-w" install
+	+cd ./-notation-overridden && $(MAKE) DSTROOT="$(DSTROOT)" INSTALLDEFAULTROOT="$(INSTALLDEFAULTROOT)/./-notation-overridden" install
 
 install-doc:
 	install -d "$(DSTROOT)"$(COQDOCINSTALL)/Transfer/html
@@ -247,12 +264,16 @@ clean::
 	rm -f $(VOFILES) $(VOFILES:.vo=.vio) $(GFILES) $(VFILES:.v=.v.d) $(VFILES:=.beautified) $(VFILES:=.old)
 	rm -f all.ps all-gal.ps all.pdf all-gal.pdf all.glob $(VFILES:.v=.glob) $(VFILES:.v=.tex) $(VFILES:.v=.g.tex) all-mli.tex
 	- rm -rf html mlihtml uninstall_me.sh
+	+cd ./-w && $(MAKE) clean
+	+cd ./-notation-overridden && $(MAKE) clean
 
 cleanall:: clean
 	rm -f $(patsubst %.v,.%.aux,$(VFILES))
 
 archclean::
 	rm -f *.cmx *.o
+	+cd ./-w && $(MAKE) archclean
+	+cd ./-notation-overridden && $(MAKE) archclean
 
 printenv:
 	@"$(COQBIN)coqtop" -config
@@ -266,6 +287,8 @@ Makefile: _CoqProject
 	mv -f $@ $@.bak
 	"$(COQBIN)coq_makefile" -f $< -o $@
 
+	+cd ./-w && $(MAKE) Makefile
+	+cd ./-notation-overridden && $(MAKE) Makefile
 
 ###################
 #                 #
