@@ -20,33 +20,37 @@ Class HeteroSubrel {A B : Type} (R R' : A -> B -> Type) :=
 
 Generalizable Variables t u.
 
-Theorem modulo `{class : Related _ _ impl t u} : t -> u.
-Proof.
-  lazy beta delta in class.
-  tauto.
-Qed.
+Tactic Notation "exactm" constr(t) :=
+  exact ((_ : Related impl _ _) t).
 
-Check modulo.
-
-Tactic Notation "exactm" constr(t) := exact (modulo t).
 Tactic Notation "applym" constr(t) :=
   let H := fresh in
-  pose (H := t); apply modulo in H; apply H; clear H.
-Tactic Notation "transfer" := refine (modulo _).
+  pose (H := t);
+  apply ((_ : Related impl _ _)) in H;
+  lazy beta delta [ id ] in H;
+  apply H;
+  clear H.
 
-Theorem modulo' `{class : Related _ _ arrow t u} : t -> u.
-Proof.
-  lazy beta delta in class.
-  tauto.
-Qed.
+Tactic Notation "transfer" :=
+  notypeclasses refine ((_ : Related impl _ _) _);
+  [ typeclasses eauto |];
+  lazy beta delta [ id ].
 
-Check modulo'.
+Tactic Notation "exactm'" constr(t) :=
+  exact ((_ : Related arrow _ _) t).
 
-Tactic Notation "exactm'" constr(t) := exact (modulo' t).
 Tactic Notation "applym'" constr(t) :=
   let H := fresh in
-  pose (H := t); apply modulo' in H; apply H; clear H.
-Tactic Notation "transfer'" := refine (modulo' _).
+  pose (H := t);
+  apply ((_ : Related arrow _ _)) in H;
+  lazy beta delta [ id ] in H;
+  apply H;
+  clear H.
+
+Tactic Notation "transfer'" :=
+  notypeclasses refine ((_ : Related arrow _ _) _);
+  [ typeclasses eauto |];
+  lazy beta delta [ id ].
 
 (* RULES *)
 
@@ -119,8 +123,6 @@ Instance all_rule
   (t1 t1' : Type) (t2 : t1 -> Prop) (t2' : t1' -> Prop)
   (inst : Related R (all (fun x : t1 => t2 x)) (all (fun x' : t1' => t2' x'))) :
   Related R (forall x : t1, t2 x) (forall x' : t1', t2' x') | 3 := inst.
-
-(* Check modulo. launches an infinite loop *)
 
 (* Subrelations *)
 
