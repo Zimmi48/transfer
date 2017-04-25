@@ -18,7 +18,9 @@ Definition respectful_arrow
 Notation " R ##> R' " := (respectful_arrow R R')
                            (right associativity, at level 55) : type_scope.
 
+Set Warnings "-notation-overridden".
 Local Notation " A <-> B " := (iffT A B) : type_scope.
+Set Warnings "default".
 
 Section Definitions.
 
