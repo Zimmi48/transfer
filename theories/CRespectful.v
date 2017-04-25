@@ -104,11 +104,39 @@ Proof.
     now exists x.
 Qed.
 
+Theorem lefttotal_decl `(R : A -> B -> Type) :
+  (forall x : A, { x' : B & R x x'}) <-> lefttotal R.
+Proof.
+  eapply iffT_Transitive; [ | exact (fliptotal _) ].
+  eapply iffT_Transitive; [ | exact (righttotal_decl _) ].
+  reflexivity.
+Qed.
+
+Theorem bitotal_decl `(R : A -> B -> Type) :
+  (forall x' : B, { x : A & R x x'}) ->
+  (forall x : A, { x' : B & R x x'}) ->
+  bitotal R.
+Proof.
+  intros righttotal lefttotal.
+  apply righttotal_decl in righttotal.
+  apply lefttotal_decl in lefttotal.
+  now apply bitotal_from_right_and_left_total.
+Qed.
+
 Lemma bitotal_decl_recip1 `(R : A -> B -> Type) :
   bitotal R -> (forall x' : B, { x : A & R x x' }).
 Proof.
   intro bitotal.
   apply (bitotal (fun _ => True) (fun x' => { x : A & R x x'})); firstorder.
+Qed.
+
+Lemma bitotal_decl_recip2 `(R : A -> B -> Type) :
+  bitotal R -> (forall x : A, { x' : B & R x x' }).
+Proof.
+  intro bitotal.
+  apply bitotal_decl_recip1.
+  apply flipbitotal.
+  assumption.
 Qed.
 
 Lemma righttotal_from_bitotal `(R : A -> B -> Type) :
@@ -117,6 +145,16 @@ Proof.
   intro bitotal.
   apply righttotal_decl.
   apply bitotal_decl_recip1.
+  assumption.
+Qed.
+
+Lemma lefttotal_from_bitotal `(R : A -> B -> Type) :
+  bitotal R -> lefttotal R.
+Proof.
+  intro bitotal.
+  apply fliptotal.
+  apply righttotal_from_bitotal.
+  apply flipbitotal.
   assumption.
 Qed.
 
@@ -158,6 +196,25 @@ Proof.
     now apply rightunique.
 Qed.
 
+Theorem leftunique_decl `(R : A -> B -> Type) :
+  (forall x y y', R x y' -> R y y' -> x = y) <-> leftunique R.
+Proof.
+  eapply iffT_Transitive; [ | exact (flipunique _) ].
+  eapply iffT_Transitive; [ | exact (rightunique_decl _) ].
+  flipdecl.
+Qed.
+
+Theorem biunique_decl `(R : A -> B -> Type) :
+  (forall x x' y', R x x' -> R x y' -> x' = y') ->
+  (forall x y y', R x y' -> R y y' -> x = y) ->
+  biunique R.
+Proof.
+  intros.
+  apply biunique_from_right_and_left_unique.
+  - now apply rightunique_decl.
+  - now apply leftunique_decl.
+Qed.
+
 Theorem biunique_decl_recip1 `(R : A -> B -> Type) :
   biunique R -> forall x x' y', R x x' -> R x y' -> x' = y'.
 Proof.
@@ -165,6 +222,14 @@ Proof.
   apply rightunique_decl.
   apply rightunique_from_biunique.
   assumption.
+Qed.
+
+Theorem biunique_decl_recip2 `(R : A -> B -> Type) :
+  biunique R -> forall x y y', R x y' -> R y y' -> x = y.
+Proof.
+  intros biunique *.
+  apply flipbiunique in biunique.
+  now apply biunique_decl_recip1 with (1 := biunique).
 Qed.
 
 Lemma generic_right_covered_decl `(R : A -> B -> Type) :
@@ -176,37 +241,6 @@ Proof.
   apply HP.
 Qed.
 
-(** * Totality declarations *)
-
-(** ** Properties derived from their right-equivalent *)
-
-Theorem lefttotal_decl `(R : A -> B -> Type) :
-  (forall x : A, { x' : B & R x x'}) <-> lefttotal R.
-Proof.
-  eapply iffT_Transitive; [ | exact (fliptotal _) ].
-  eapply iffT_Transitive; [ | exact (righttotal_decl _) ].
-  reflexivity.
-Qed.
-
-Lemma bitotal_decl_recip2 `(R : A -> B -> Type) :
-  bitotal R -> (forall x : A, { x' : B & R x x' }).
-Proof.
-  intro bitotal.
-  apply bitotal_decl_recip1.
-  apply flipbitotal.
-  assumption.
-Qed.
-
-Lemma lefttotal_from_bitotal `(R : A -> B -> Type) :
-  bitotal R -> lefttotal R.
-Proof.
-  intro bitotal.
-  apply fliptotal.
-  apply righttotal_from_bitotal.
-  apply flipbitotal.
-  assumption.
-Qed.
-
 Lemma generic_left_covered_decl `(R : A -> B -> Type) :
   ((R ##> flip arrow) ##> flip arrow) (fun P => forall x, { y : B & R x y } -> P x) forall_def.
 Proof.
@@ -215,19 +249,6 @@ Proof.
   intros P P' Prel HP x' (x & xrel).
   apply (Prel _ _ xrel).
   apply HP.
-Qed.
-
-(** ** Properties derived from their right and left-equivalent *)
-
-Theorem bitotal_decl `(R : A -> B -> Type) :
-  (forall x' : B, { x : A & R x x'}) ->
-  (forall x : A, { x' : B & R x x'}) ->
-  bitotal R.
-Proof.
-  intros righttotal lefttotal.
-  apply righttotal_decl in righttotal.
-  apply lefttotal_decl in lefttotal.
-  now apply bitotal_from_right_and_left_total.
 Qed.
 
 (** *** Generic property for non-total relations *)
@@ -269,59 +290,6 @@ Proof.
     reflexivity.
 Qed.
 
-(** * Uniqueness declarations *)
-
-(** ** Properties derived from their right-equivalent *)
-
-Theorem leftunique_decl `(R : A -> B -> Type) :
-  (forall x y y', R x y' -> R y y' -> x = y) <-> leftunique R.
-Proof.
-  eapply iffT_Transitive; [ | exact (flipunique _) ].
-  eapply iffT_Transitive; [ | exact (rightunique_decl _) ].
-  flipdecl.
-Qed.
-
-Theorem biunique_decl_recip2 `(R : A -> B -> Type) :
-  biunique R -> forall x y y', R x y' -> R y y' -> x = y.
-Proof.
-  intros biunique *.
-  apply flipbiunique in biunique.
-  now apply biunique_decl_recip1 with (1 := biunique).
-Qed.
-
-(** ** Properties derived from their right and left-equivalent *)
-
-Theorem biunique_decl `(R : A -> B -> Type) :
-  (forall x x' y', R x x' -> R x y' -> x' = y') ->
-  (forall x y y', R x y' -> R y y' -> x = y) ->
-  biunique R.
-Proof.
-  intros.
-  apply biunique_from_right_and_left_unique.
-  - now apply rightunique_decl.
-  - now apply leftunique_decl.
-Qed.
-
-(** ** More complex properties *)  
-
-Lemma rightunique_predicate `(R : A -> B -> Type) :
-  righttotal R ->
-  ((R ##> iffT) ##> (R ##> iffT) ##> arrow) (eq ##> iffT) (eq ##> iffT).
-Proof.
-  intros righttotal P P' relP Q Q' relQ H x' * <-.
-  assert ({ x : A & R x x' }) as (x & Hx)
-      by now apply righttotal_decl.
-  pose proof Hx as Hx2.
-  specialize (H x x eq_refl).
-  apply relP in Hx.
-  apply relQ in Hx2.
-  firstorder.
-Qed.
-
-(** * Totality declarations *)
-
-(** ** Properties derived from their right-equivalent *)
-
 Theorem lefttotal_predicate `(R : A -> B -> Type) :
   leftunique R <-> lefttotal (R ##> iffT).
 Proof.
@@ -330,8 +298,6 @@ Proof.
   eapply iffT_Transitive; [ exact (righttotal_predicate _) | ].
   flipdecl.
 Qed.
-
-(** ** Properties derived from their right and left-equivalent *)
 
 Theorem total_predicate `(R : A -> B -> Type) :
   biunique R <-> bitotal (R ##> iffT).
@@ -353,7 +319,46 @@ Proof.
       exact bitotal.
 Qed.
 
-(* ** A lemma that is not a generalization of the previous one unfortunately. *)
+Lemma rightunique_predicate `(R : A -> B -> Type) :
+  righttotal R ->
+  ((R ##> iffT) ##> (R ##> iffT) ##> arrow) (eq ##> iffT) (eq ##> iffT).
+Proof.
+  intros righttotal P P' relP Q Q' relQ H x' * <-.
+  assert ({ x : A & R x x' }) as (x & Hx)
+      by now apply righttotal_decl.
+  pose proof Hx as Hx2.
+  specialize (H x x eq_refl).
+  apply relP in Hx.
+  apply relQ in Hx2.
+  firstorder.
+Qed.
+
+Lemma leftunique_predicate `(R : A -> B -> Type) :
+  lefttotal R ->
+  ((R ##> iffT) ##> (R ##> iffT) ##> flip arrow) (eq ##> iffT) (eq ##> iffT).
+Proof.
+  intros lefttotal.
+  apply fliptotal in lefttotal.
+  apply rightunique_predicate in lefttotal.
+  intros P P' ? Q Q' ?.
+  specialize (lefttotal P' P ltac:(flipdecl) Q' Q ltac:(flipdecl)).
+  assumption.
+Qed.
+
+Lemma biunique_predicate `(R : A -> B -> Type) :
+  bitotal R ->
+  ((R ##> iffT) ##> (R ##> iffT) ##> iffT) (eq ##> iffT) (eq ##> iffT).
+Proof.
+  intro bitotal.
+  pose (righttotal := righttotal_from_bitotal _ bitotal).
+  pose (lefttotal := lefttotal_from_bitotal _ bitotal).
+  intros P P' relP Q Q' relQ; split;
+    [ apply (rightunique_predicate _ righttotal _ _ relP _ _ relQ)
+    | apply (leftunique_predicate _ lefttotal _ _ relP _ _ relQ) ];
+    assumption.
+Qed.
+
+(** ** A lemma that is not a generalization of the previous ones unfortunately. *)
 
 Lemma bitotal_function `(R : A -> B -> Type) `(S : C -> D -> Type) :
   biunique R -> bitotal R -> bitotal S -> bitotal (R ##> S).
@@ -380,35 +385,4 @@ Proof.
     rewrite <- leftunique_R.
     + destruct (lefttotal_S (f x)); auto.
     + destruct (righttotal_R x'); auto.
-Qed.
-
-(** * Uniqueness declarations *)
-
-(** ** Properties derived from their right-equivalent *)
-
-Lemma leftunique_predicate `(R : A -> B -> Type) :
-  lefttotal R ->
-  ((R ##> iffT) ##> (R ##> iffT) ##> flip arrow) (eq ##> iffT) (eq ##> iffT).
-Proof.
-  intros lefttotal.
-  apply fliptotal in lefttotal.
-  apply rightunique_predicate in lefttotal.
-  intros P P' ? Q Q' ?.
-  specialize (lefttotal P' P ltac:(flipdecl) Q' Q ltac:(flipdecl)).
-  assumption.
-Qed.
-
-(** ** Properties derived from their right and left-equivalent *)
-
-Lemma biunique_predicate `(R : A -> B -> Type) :
-  bitotal R ->
-  ((R ##> iffT) ##> (R ##> iffT) ##> iffT) (eq ##> iffT) (eq ##> iffT).
-Proof.
-  intro bitotal.
-  pose (righttotal := righttotal_from_bitotal _ bitotal).
-  pose (lefttotal := lefttotal_from_bitotal _ bitotal).
-  intros P P' relP Q Q' relQ; split;
-    [ apply (rightunique_predicate _ righttotal _ _ relP _ _ relQ)
-    | apply (leftunique_predicate _ lefttotal _ _ relP _ _ relQ) ];
-    assumption.
 Qed.
