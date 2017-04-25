@@ -10,6 +10,3 @@ Makefile.bak
 *~
 *.v.d
 
-# tests
-transfer.v
-*declare_*
