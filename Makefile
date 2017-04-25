@@ -55,11 +55,11 @@ vo_to_obj = $(addsuffix .o,\
 ##########################
 
 COQLIBS?=\
-  -R "." Transfer
+  -R "theories" Transfer
 COQCHKLIBS?=\
-  -R "." Transfer
+  -R "theories" Transfer
 COQDOCLIBS?=\
-  -R "." Transfer
+  -R "theories" Transfer
 
 ##########################
 #                        #
@@ -101,13 +101,13 @@ endif
 #                    #
 ######################
 
-VFILES:=CRespectful.v\
-  Respectful.v\
-  StandardInstances.v\
-  Transfer.v\
-  NArithTransfer.v\
-  NArithTests.v\
-  SetNatTransfer.v
+VFILES:=theories/CRespectful.v\
+  theories/Respectful.v\
+  theories/StandardInstances.v\
+  theories/Transfer.v\
+  theories/NArithTransfer.v\
+  test-suite/NArithTests.v\
+  test-suite/SetNatTransfer.v
 
 ifneq ($(filter-out archclean clean cleanall printenv,$(MAKECMDGOALS)),)
 -include $(addsuffix .d,$(VFILES))
@@ -121,6 +121,7 @@ endif
 
 VO=vo
 VOFILES:=$(VFILES:.v=.$(VO))
+VOFILES0=$(patsubst theories/%,%,$(filter theories/%,$(VOFILES)))
 GLOBFILES:=$(VFILES:.v=.glob)
 GFILES:=$(VFILES:.v=.g)
 HTMLFILES:=$(VFILES:.v=.html)
@@ -128,6 +129,7 @@ GHTMLFILES:=$(VFILES:.v=.g.html)
 OBJFILES=$(call vo_to_obj,$(VOFILES))
 ALLNATIVEFILES=$(OBJFILES:.o=.cmi) $(OBJFILES:.o=.cmo) $(OBJFILES:.o=.cmx) $(OBJFILES:.o=.cmxs)
 NATIVEFILES=$(foreach f, $(ALLNATIVEFILES), $(wildcard $f))
+NATIVEFILES0=$(patsubst theories/%,%,$(filter theories/%,$(NATIVEFILES)))
 ifeq '$(HASNATDYNLINK)' 'true'
 HASNATDYNLINK_OR_EMPTY := yes
 else
@@ -196,7 +198,7 @@ userinstall:
 	+$(MAKE) USERINSTALL=true install
 
 install:
-	cd "." && for i in $(VOFILES) $(VFILES) $(GLOBFILES) $(NATIVEFILES) $(CMOFILES) $(CMIFILES) $(CMAFILES); do \
+	cd "theories" && for i in $(NATIVEFILES0) $(GLOBFILES0) $(VFILES0) $(VOFILES0); do \
 	 install -d "`dirname "$(DSTROOT)"$(COQLIBINSTALL)/Transfer/$$i`"; \
 	 install -m 0644 $$i "$(DSTROOT)"$(COQLIBINSTALL)/Transfer/$$i; \
 	done
@@ -209,7 +211,7 @@ install-doc:
 
 uninstall_me.sh: Makefile
 	echo '#!/bin/sh' > $@
-	printf 'cd "$${DSTROOT}"$(COQLIBINSTALL)/Transfer && rm -f $(VOFILES) $(VFILES) $(GLOBFILES) $(NATIVEFILES) $(CMOFILES) $(CMIFILES) $(CMAFILES) && find . -type d -and -empty -delete\ncd "$${DSTROOT}"$(COQLIBINSTALL) && find "Transfer" -maxdepth 0 -and -empty -exec rmdir -p \{\} \;\n' >> "$@"
+	printf 'cd "$${DSTROOT}"$(COQLIBINSTALL)/Transfer && rm -f $(NATIVEFILES0) $(GLOBFILES0) $(VFILES0) $(VOFILES0) && find . -type d -and -empty -delete\ncd "$${DSTROOT}"$(COQLIBINSTALL) && find "Transfer" -maxdepth 0 -and -empty -exec rmdir -p \{\} \;\n' >> "$@"
 	printf 'cd "$${DSTROOT}"$(COQDOCINSTALL)/Transfer \\\n' >> "$@"
 	printf '&& rm -f $(shell find "html" -maxdepth 1 -and -type f -print)\n' >> "$@"
 	printf 'cd "$${DSTROOT}"$(COQDOCINSTALL) && find Transfer/html -maxdepth 0 -and -empty -exec rmdir -p \{\} \;\n' >> "$@"

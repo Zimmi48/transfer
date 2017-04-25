@@ -1,8 +1,10 @@
--R . Transfer
-CRespectful.v
-Respectful.v
-StandardInstances.v
-Transfer.v
-NArithTransfer.v
-NArithTests.v
-SetNatTransfer.v
+-R theories Transfer
+
+theories/CRespectful.v
+theories/Respectful.v
+theories/StandardInstances.v
+theories/Transfer.v
+theories/NArithTransfer.v
+
+test-suite/NArithTests.v
+test-suite/SetNatTransfer.v
