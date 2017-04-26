@@ -9,19 +9,16 @@ From Coq Require Import Program.Basics CMorphisms.
 
 Set Universe Polymorphism.
 
-Definition respectful_arrow
-  {A B C D: Type}
-  (R : A -> B -> Type) (R' : C -> D -> Type)
-  (f : A -> C) (f' : B -> D) : Type :=
+(** Universe-polymorphic forall_def and arrow are not declared as opaque in the library *)
+Typeclasses Opaque forall_def arrow.
+
+Generalizable Variables A B C D.
+
+Definition respectful_arrow `(R : A -> B -> Type) `(R' : C -> D -> Type) (f : A -> C) (f' : B -> D) :=
   forall e e', R e e' -> R' (f e) (f' e').
 
 Notation " R ##> R' " := (respectful_arrow R R')
                            (right associativity, at level 55) : type_scope.
-
-Typeclasses Opaque forall_def arrow.
-(** universe-polymorphic forall_def and arrow are not declared as opaque in the library *)
-
-Generalizable Variables A B C D.
 
 Class Related `(R : A -> B -> Type) (t : A) (t' : B) :=
   is_related : R t t'.
