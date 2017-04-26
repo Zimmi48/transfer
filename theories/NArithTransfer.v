@@ -21,12 +21,9 @@ Proof. apply N2Nat.id. Qed.
 Instance natN_bitotal :
   Related ((natN ##> iffT) ##> iffT) forall_def forall_def.
 Proof.
-  related_basics.
   unfold natN.
-  intros f1 f2 Hf; split; intros H x.
-  + apply (Hf (N.to_nat x)); trivial.
-    apply N2Nat.id.
-  + apply Hf with (e' := N.of_nat x); trivial.
+  intros ? ? HP.
+  split; intros ? ?; eapply HP; trivial using N2Nat.id.
 Qed.
 
 Module N2Nat_transfer.
@@ -35,34 +32,22 @@ Module N2Nat_transfer.
 
 Lemma natN_bis x x' : natN x x' -> N.to_nat x' = x.
 Proof.
-  unfold natN.
-  intros H.
-  rewrite <- H.
+  intros <-.
   apply Nat2N.id.
 Qed.
 
 Lemma natN_bis_recip x x' : N.to_nat x' = x -> natN x x'.
 Proof.
-  unfold natN.
-  intros H.
-  rewrite <- H.
+  intros <-.
   apply N2Nat.id.
 Qed.
-
-Ltac unfold_natN_bis :=
-  let n' := fresh "n" in
-  let n := fresh "n" in
-  let Hn := fresh "Hn" in
-  intros n n' Hn;
-  apply natN_bis in Hn;
-  rewrite <- Hn;
-  clear Hn n.
 
 Import N2Nat.
 
 Ltac solve thm :=
-  related_basics;
-  repeat unfold_natN_bis;
+  intros;
+  unfold arrow, impl;
+  repeat (intros ? ? <-%natN_bis);
   try (apply natN_bis_recip);
   (apply thm || symmetry ; apply thm).
 
@@ -159,18 +144,10 @@ Import Nat2N.
 
 (* Preliminaries *)
 
-Ltac unfold_natN :=
-  let n := fresh "n" in
-  let n' := fresh "n" in
-  let Hn := fresh "Hn" in
-  intros n n' Hn;
-  unfold natN in Hn;
-  rewrite <- Hn;
-  clear Hn n'.
-
 Ltac solve thm :=
-  related_basics;
-  repeat unfold_natN;
+  intros;
+  unfold arrow, impl, flip;
+  repeat (intros ? ? <-);
   try (rewrite natN);
   apply thm.
 
@@ -185,4 +162,3 @@ Qed.
 (* Etc *)
 
 End Nat2N_transfer.
-

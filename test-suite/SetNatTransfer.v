@@ -76,15 +76,8 @@ Module TransferProp (E:InfDecType)(Fin:WSetsOn E).
   (* Missing definition of cartesian product on MSets *)
 
   Ltac SetNat_basics :=
-    related_basics;
-    unfold SetNat;
-    repeat (
-      let x1 := fresh "s" in
-      let x2 := fresh "s" in
-      let Hx := fresh "Hs" in
-      intros x1 x2 Hx;
-      rewrite <- Hx;
-      clear Hx x2 ).
+    unfold arrow, impl, flip;
+    repeat (let s := fresh "s0" in intros * s ? <-).
 
   Instance subset_le : Related (SetNat ##> SetNat ##> arrow) Fin.Subset le.
   Proof.
@@ -179,15 +172,11 @@ Module TransferProp (E:InfDecType)(Fin:WSetsOn E).
   Proof.
     SetNat_basics.
     unfold disjSum.
-    destruct (Fin.is_empty (Fin.inter s s0)) eqn:Hempty.
+    destruct Fin.is_empty eqn:Hempty.
     + apply someSet.
       unfold SetNat.
-      assert (Hinter0 : Fin.cardinal (Fin.inter s s0) = 0). {
-        apply Fin.is_empty_spec in Hempty.
-        now apply FinProp.cardinal_Empty.
-      }
       rewrite plus_n_O at 1.
-      rewrite <- Hinter0.
+      apply Fin.is_empty_spec, FinProp.cardinal_Empty in Hempty as <-.
       apply FinProp.union_inter_cardinal.
     + apply noSet.
   Qed.
@@ -201,13 +190,9 @@ Module TransferProp (E:InfDecType)(Fin:WSetsOn E).
     Related (SetNat ##> SetNat ##> SetNat ##> impl) disjSum_pred sum_pred.
   Proof.
     SetNat_basics.
-    unfold disjSum_pred.
+    intros (?, <-).
     unfold sum_pred.
-    intros [H1 H2].
-    rewrite <- H2.
-    symmetry.
-    apply disj_union; trivial.
-    all:reflexivity.
+    now rewrite <- disj_union.
   Qed.
 
   (* Tests *)

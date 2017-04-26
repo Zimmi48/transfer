@@ -163,19 +163,6 @@ Proof. unfold HeteroSubrel, "##>". auto. Qed.
 
 (* Predefined instances *)
 
-Ltac related_basics :=
-  intros;
-  unfold Related;
-  unfold respectful_arrow;
-  unfold arrow;
-  unfold impl;
-  unfold forall_def;
-  unfold flip.
-
-Ltac related_tauto :=
-  related_basics;
-  tauto.
-
 Instance iffT_reflexivity : `(Related iffT A A) | 10.
 Proof. easy. Qed.
 
@@ -184,10 +171,8 @@ Proof. easy. Qed.
 
 (*
 Instance true_rule : Related iff True True.
-Proof ltac:(related_tauto).
 
 Instance false_rule : Related iff False False.
-Proof ltac:(related_tauto).
 *)
 
 Instance arrow_transfer_rule : Related (iffT ##> iffT ##> iffT) arrow arrow.
@@ -215,7 +200,7 @@ Instance eq_reflexivity `(x : A) : Related eq x x.
 Proof. easy. Qed.
 
 Instance not_rule : Related (iff ##> iff) not not.
-Proof. related_tauto. Qed.
+Proof. intros ? ? []; split; auto. Qed.
 
 (** ** Totality declarations *)
 
