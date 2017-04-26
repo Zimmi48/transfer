@@ -194,9 +194,9 @@ Module TransferProp (E:InfDecType)(Fin:WSetsOn E).
 
   Definition disjSum_pred s1 s2 s3 :=
     Fin.Empty (Fin.inter s1 s2) /\ Fin.Equal (Fin.union s1 s2) s3.
-  
+
   Definition sum_pred n1 n2 n3 := n1 + n2 = n3.
-  
+
   Instance disj_union_ter :
     Related (SetNat ##> SetNat ##> SetNat ##> impl) disjSum_pred sum_pred.
   Proof.
