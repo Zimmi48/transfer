@@ -39,10 +39,12 @@ Tactic Notation "applym" constr(t) :=
   clear H.
 
 Tactic Notation "transfer" :=
-  notypeclasses refine (proj1 (_ : Related iff _ _) _) +
-  notypeclasses refine ((_ : Related impl _ _) _);
-  [ typeclasses eauto |];
-  lazy beta delta [ id ].
+  progress
+    ( notypeclasses refine (proj1 (_ : Related iff _ _) _) +
+      notypeclasses refine ((_ : Related impl _ _) _);
+      [ typeclasses eauto |];
+      lazy beta delta [ id ]
+    ).
 
 Tactic Notation "exactm'" constr(t) :=
   exact (fst (_ : Related iffT _ _) t) + exact ((_ : Related arrow _ _) t).
@@ -56,10 +58,12 @@ Tactic Notation "applym'" constr(t) :=
   clear H.
 
 Tactic Notation "transfer'" :=
-  notypeclasses refine (fst (_ : Related iffT _ _) _) +
-  notypeclasses refine ((_ : Related arrow _ _) _);
-  [ typeclasses eauto |];
-  lazy beta delta [ id ].
+  progress
+    ( notypeclasses refine (fst (_ : Related iffT _ _) _) +
+      notypeclasses refine ((_ : Related arrow _ _) _);
+      [ typeclasses eauto |];
+      lazy beta delta [ id ]
+    ).
 
 (* RULES *)
 
