@@ -13,3 +13,4 @@ test-suite/tests_bertot.v
 test-suite/tests_example.v
 test-suite/tests_ssrint.v
 test-suite/tests_zomicron.v
+test-suite/failure.v

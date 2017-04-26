@@ -112,7 +112,8 @@ VFILES:=theories/CRespectful.v\
   test-suite/tests_bertot.v\
   test-suite/tests_example.v\
   test-suite/tests_ssrint.v\
-  test-suite/tests_zomicron.v
+  test-suite/tests_zomicron.v\
+  test-suite/failure.v
 
 ifneq ($(filter-out archclean clean cleanall printenv,$(MAKECMDGOALS)),)
 -include $(addsuffix .d,$(VFILES))
