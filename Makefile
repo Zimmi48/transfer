@@ -105,8 +105,14 @@ VFILES:=theories/CRespectful.v\
   theories/Respectful.v\
   theories/Transfer.v\
   theories/NArithTransfer.v\
+  theories/iso_ssrint.v\
+  theories/tactics.v\
   test-suite/NArithTests.v\
-  test-suite/SetNatTransfer.v
+  test-suite/SetNatTransfer.v\
+  test-suite/tests_bertot.v\
+  test-suite/tests_example.v\
+  test-suite/tests_ssrint.v\
+  test-suite/tests_zomicron.v
 
 ifneq ($(filter-out archclean clean cleanall printenv,$(MAKECMDGOALS)),)
 -include $(addsuffix .d,$(VFILES))
