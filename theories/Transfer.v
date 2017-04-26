@@ -64,15 +64,6 @@ Tactic Notation "transfer'" :=
 
 (* RULES *)
 
-(* ENV *)
-
-Ltac env_rule _ t t' :=
-  match goal with
-    | [ p : _ t t' |- _ ] => eexact p
-  end.
-
-Hint Extern 1 (Related ?R ?t ?t') => env_rule R t t' : typeclass_instances.
-
 (* SUBREL *)
 
 Instance subrel_rule `(R : A -> B -> Type) (R' : A -> B -> Type) (t : A) (t' : B) :
@@ -92,8 +83,6 @@ Instance lambda_rule `(R : A -> B -> Type) `(R' : C -> D -> Type) (t : A -> C) (
 Proof.
   intros H ? ? ?. now apply H.
 Qed.
-
-Hint Extern 0 (Related _ _ _) => progress intros ** : typeclass_instances.
 
 (* APP *)
 
