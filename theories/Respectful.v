@@ -4,7 +4,8 @@
  * http://mozilla.org/MPL/2.0/.
  *)
 
-Require Import Transfer.CRespectful.
+From Coq Require Import Program.Basics CMorphisms.
+Require Import Transfer CRespectful.
 
 Set Warnings "-notation-overridden".
 Local Notation " A <-> B " := (iffT A B) : type_scope.
@@ -247,4 +248,26 @@ Proof.
     | apply lefttotal_predicate;
       apply leftunique_from_biunique ];
     exact biunique.
+Qed.
+
+(** Instances *)
+
+Instance bitotal_from_bitotal `(R : A -> B -> Type) :
+  Related ((R ##> iffT) ##> iffT) forall_def forall_def ->
+  Related ((R ##> iff) ##> iff) (@all A) (@all B).
+Proof.
+  unfold Related.
+  intros.
+  apply Respectful.bitotal_decl.
+  now apply bitotal_decl_recip1.
+  now apply bitotal_decl_recip2.
+Qed.
+
+Instance bitotal_predicate_rule `(R : A -> B -> Type) :
+  Related (R ##> R ##> iff) eq eq ->
+  Related (((R ##> iff) ##> iff) ##> iff) (@all (A -> Prop)) (@all (B -> Prop)).
+Proof.
+  unfold Related.
+  intros.
+  now apply total_predicate.
 Qed.

@@ -5,8 +5,18 @@
  * http://mozilla.org/MPL/2.0/.
  *)
 
-Require Export Transfer.CRespectful.
-Require Transfer.Respectful.
+From Coq Require Import Program.Basics CMorphisms.
+
+Set Universe Polymorphism.
+
+Definition respectful_arrow
+  {A B C D: Type}
+  (R : A -> B -> Type) (R' : C -> D -> Type)
+  (f : A -> C) (f' : B -> D) : Type :=
+  forall e e', R e e' -> R' (f e) (f' e').
+
+Notation " R ##> R' " := (respectful_arrow R R')
+                           (right associativity, at level 55) : type_scope.
 
 Typeclasses Opaque forall_def arrow.
 (** universe-polymorphic forall_def and arrow are not declared as opaque in the library *)
@@ -201,34 +211,3 @@ Proof. easy. Qed.
 
 Instance not_rule : Related (iff ##> iff) not not.
 Proof. intros ? ? []; split; auto. Qed.
-
-(** ** Totality declarations *)
-
-Instance bitotal_from_bitotal `(R : A -> B -> Type) :
-  Related ((R ##> iffT) ##> iffT) forall_def forall_def ->
-  Related ((R ##> iff) ##> iff) (@all A) (@all B).
-Proof.
-  unfold Related.
-  intros.
-  apply Respectful.bitotal_decl.
-  now apply bitotal_decl_recip1.
-  now apply bitotal_decl_recip2.
-Qed.
-
-Instance bitotal_predicate_rule `(R : A -> B -> Type) :
-  Related (R ##> R ##> iff) eq eq ->
-  Related (((R ##> iff) ##> iff) ##> iff) (@all (A -> Prop)) (@all (B -> Prop)).
-Proof.
-  unfold Related.
-  intros.
-  now apply Respectful.total_predicate.
-Qed.
-
-Instance bitotal_predicate_rule' `(R : A -> B -> Type) :
-  Related (R ##> R ##> iffT) eq eq ->
-  Related (((R ##> iffT) ##> iffT) ##> iffT) forall_def forall_def.
-Proof.
-  unfold Related.
-  intros.
-  now apply total_predicate.
-Qed.

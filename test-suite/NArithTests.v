@@ -5,8 +5,8 @@ Tactic Notation "give_2_proofs" := apply mix.
 
 Tactic Notation "give_3_proofs" := apply mix; [apply mix|].
 
-Require Import PeanoNat.
-Require Import Transfer.NArithTransfer.
+From Coq Require Import PeanoNat BinNatDef.
+Require Import Transfer Respectful NArithTransfer.
 
 (** ** Basic specifications : pred add sub mul *)
 

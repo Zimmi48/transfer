@@ -5,8 +5,8 @@
  * http://mozilla.org/MPL/2.0/.
  *)
 
-Require Export Transfer.Transfer Coq.NArith.BinNatDef.
-Require Import Coq.NArith.Nnat.
+From Coq Require Import BinNatDef Nnat CMorphisms Program.Basics.
+Require Import Transfer.
 
 Definition natN x x' := N.of_nat x = x'.
 

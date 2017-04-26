@@ -4,19 +4,10 @@
  * http://mozilla.org/MPL/2.0/.
  *)
 
-Require Export Coq.Program.Basics Coq.Classes.CMorphisms.
-Require Coq.Setoids.Setoid.
+From Coq Require Import CMorphisms RelationClasses.
+Require Import Transfer.
 
 Global Set Universe Polymorphism.
-
-Definition respectful_arrow
-  {A B C D: Type}
-  (R : A -> B -> Type) (R' : C -> D -> Type)
-  (f : A -> C) (f' : B -> D) : Type :=
-  forall e e', R e e' -> R' (f e) (f' e').
-
-Notation " R ##> R' " := (respectful_arrow R R')
-                           (right associativity, at level 55) : type_scope.
 
 Set Warnings "-notation-overridden".
 Local Notation " A <-> B " := (iffT A B) : type_scope.
@@ -385,4 +376,15 @@ Proof.
     rewrite <- leftunique_R.
     + destruct (lefttotal_S (f x)); auto.
     + destruct (righttotal_R x'); auto.
+Qed.
+
+(** Instances *)
+
+Instance bitotal_predicate_rule' `(R : A -> B -> Type) :
+  Related (R ##> R ##> iffT) eq eq ->
+  Related (((R ##> iffT) ##> iffT) ##> iffT) forall_def forall_def.
+Proof.
+  unfold Related.
+  intros.
+  now apply total_predicate.
 Qed.
