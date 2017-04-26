@@ -103,7 +103,6 @@ endif
 
 VFILES:=theories/CRespectful.v\
   theories/Respectful.v\
-  theories/StandardInstances.v\
   theories/Transfer.v\
   theories/NArithTransfer.v\
   test-suite/NArithTests.v\

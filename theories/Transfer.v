@@ -5,7 +5,7 @@
  * http://mozilla.org/MPL/2.0/.
  *)
 
-Require Export Transfer.StandardInstances.
+Require Export Transfer.CRespectful.
 Require Transfer.Respectful.
 
 Typeclasses Opaque forall_def arrow.
