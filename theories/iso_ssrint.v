@@ -103,7 +103,7 @@ Proof.
   ring_simplify; unfold Zopp; reflexivity.
 Qed.
 
-Instance Biunique_R : Related (R ##> R ##> iff) (@eq Z) (@eq int).
+Instance Biunique_R : Related (R ##> R ##> iff) eq eq.
 Proof.
 unfold R,f; repeat red.
 intros e e'; destruct e'.
@@ -132,7 +132,7 @@ rewrite H3 in H.
 rewrite H0 H; reflexivity.
 Qed.
 
-Instance bitotal_R : Related ((R ##> iff) ##> iff) (@all Z) (@all int).
+Instance bitotal_R : Related ((R ##> iff) ##> iff) all all.
 Proof.
 unfold R,all, "##>"; repeat red.
 intros e e' o.

@@ -9,6 +9,10 @@ From Coq Require Import Program.Basics CMorphisms.
 
 Set Universe Polymorphism.
 
+(** Make the implicit argument of all maximally inserted for shorter
+    morphism declarations. *)
+Arguments all {A}.
+
 (** Universe-polymorphic forall_def and arrow are not declared as opaque in the library *)
 Typeclasses Opaque forall_def arrow.
 
