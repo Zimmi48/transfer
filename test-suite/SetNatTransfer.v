@@ -3,7 +3,10 @@
     Isabelle file.
 *)
 
+Set Warnings "-notation-overridden".
 From Coq Require Import MSets Omega CMorphisms.
+Set Warnings "default".
+
 Require Import Transfer CRespectful.
 
 (** Because MSets are generic, we give generic transfer declarations.

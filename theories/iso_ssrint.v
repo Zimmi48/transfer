@@ -4,7 +4,10 @@
 
 Require Import Transfer.
 From Coq Require Import ZArith.
+
+Set Warnings "-notation-overridden".
 From mathcomp Require Import ssrnum ssrint ssrbool ssrnat ssreflect ssralg.
+Set Warnings "default".
 
 Open Scope Z_scope.
 
@@ -394,8 +397,6 @@ rewrite Nat.add_comm.
 reflexivity.
 Qed.
 
-Check Num.Def.ler.
-Check (rel int).
 Definition ler' : int -> int -> Prop := Num.Def.ler.
 
 Instance le_transfer : Related (R ##> R ##> iff) Z.le ler'.
