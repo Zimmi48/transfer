@@ -1,5 +1,14 @@
 # Transfer library for Coq
 
+**Preliminary note:**
+The most up-to-date documentation for this library is [the presentation
+I made at the Deducteam seminar
+(April, 2017)](http://www.theozimmermann.net/transfer/deducteam-seminar/)
+(whose sources you can find in the *slides-deducteam* branch of this
+repository).
+Updating this README and producing a better doc are among the items of
+top priority on my TODO list.
+
 This library helps you working seamlessly with several representations
 for the same objects, switching from one to another when doing proofs
 and easily transferring theorems across representations.
