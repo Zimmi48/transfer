@@ -1,0 +1,13 @@
+
+# automatically generated files
+Makefile.bak
+*.cm*
+*.ml4.d
+*.o
+*.vo
+*.aux
+*.glob
+*~
+*.v.d
+*.cache
+*trace
